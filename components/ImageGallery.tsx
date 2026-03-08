@@ -74,12 +74,12 @@ const styles = StyleSheet.create({
     height: 280,
   },
   noImage: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#EDE8E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   noImageText: {
-    color: '#999',
+    color: '#A8A09A',
     fontSize: 16,
   },
   pagination: {
@@ -92,16 +92,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ccc',
+    backgroundColor: '#DDD8CE',
   },
   dotActive: {
-    backgroundColor: '#1a5f2a',
+    backgroundColor: '#3A3830',
     width: 20,
   },
   caption: {
     textAlign: 'center',
     fontSize: 13,
-    color: '#666',
+    color: '#7A7269',
     paddingHorizontal: 16,
     marginBottom: 8,
   },

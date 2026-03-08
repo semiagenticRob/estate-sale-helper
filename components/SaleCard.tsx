@@ -7,16 +7,39 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SearchResult } from '../types';
+import { formatDateRange, getSaleStatus, SaleStatus } from '../lib/dates';
 
 interface SaleCardProps {
   sale: SearchResult;
   isSaved: boolean;
+  hasQuery: boolean;
   onPress: () => void;
   onToggleSave: () => void;
 }
 
-export function SaleCard({ sale, isSaved, onPress, onToggleSave }: SaleCardProps) {
-  const saleStatus = getSaleStatus(sale.startDate, sale.endDate);
+const STATUS_LABELS: Record<SaleStatus, string> = {
+  active: 'Happening Now',
+  upcoming: 'Upcoming',
+  ending: 'Last Day',
+  ended: 'Ended',
+};
+
+const STATUS_BADGE_COLORS: Record<SaleStatus, string> = {
+  active: '#E6EDE7',
+  upcoming: '#E3E8F0',
+  ending: '#F0E8DC',
+  ended: '#ECEAE7',
+};
+
+const STATUS_TEXT_COLORS: Record<SaleStatus, string> = {
+  active: '#3D6B42',
+  upcoming: '#394E6E',
+  ending: '#8B5E30',
+  ended: '#857E78',
+};
+
+export function SaleCard({ sale, isSaved, hasQuery, onPress, onToggleSave }: SaleCardProps) {
+  const status = getSaleStatus(sale.startDate, sale.endDate);
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
@@ -35,14 +58,18 @@ export function SaleCard({ sale, isSaved, onPress, onToggleSave }: SaleCardProps
         </View>
       )}
 
-      {/* Match Badge */}
-      <View style={styles.matchBadge}>
-        <Text style={styles.matchText}>{sale.matchPercent}% match</Text>
-      </View>
+      {/* Match Badge — only shown when a query was entered */}
+      {hasQuery && (
+        <View style={styles.matchBadge}>
+          <Text style={styles.matchText}>{sale.matchPercent}% match</Text>
+        </View>
+      )}
 
       {/* Save Button */}
       <Pressable style={styles.saveButton} onPress={onToggleSave}>
-        <Text style={styles.saveIcon}>{isSaved ? '★' : '☆'}</Text>
+        <Text style={[styles.saveIcon, isSaved && styles.saveIconActive]}>
+          {isSaved ? '★' : '☆'}
+        </Text>
       </Pressable>
 
       {/* Card Content */}
@@ -51,7 +78,7 @@ export function SaleCard({ sale, isSaved, onPress, onToggleSave }: SaleCardProps
           {sale.title}
         </Text>
         <Text style={styles.company} numberOfLines={1}>
-          {sale.companyName || sale.city + ', ' + sale.state}
+          {sale.companyName || `${sale.city}, ${sale.state}`}
         </Text>
         <Text style={styles.description} numberOfLines={2}>
           {sale.description}
@@ -59,14 +86,10 @@ export function SaleCard({ sale, isSaved, onPress, onToggleSave }: SaleCardProps
 
         <View style={styles.footer}>
           <View style={styles.footerLeft}>
-            <Text style={styles.distance}>{sale.distanceMiles} mi away</Text>
-            <View style={[styles.statusBadge, styles[saleStatus]]}>
-              <Text style={styles.statusText}>
-                {saleStatus === 'active'
-                  ? 'Happening Now'
-                  : saleStatus === 'upcoming'
-                    ? 'Upcoming'
-                    : 'Ending Soon'}
+            <Text style={styles.distance}>{sale.distanceMiles} mi</Text>
+            <View style={[styles.statusBadge, { backgroundColor: STATUS_BADGE_COLORS[status] }]}>
+              <Text style={[styles.statusText, { color: STATUS_TEXT_COLORS[status] }]}>
+                {STATUS_LABELS[status]}
               </Text>
             </View>
           </View>
@@ -79,33 +102,9 @@ export function SaleCard({ sale, isSaved, onPress, onToggleSave }: SaleCardProps
   );
 }
 
-function getSaleStatus(startDate: string, endDate: string): 'active' | 'upcoming' | 'ending' {
-  const now = new Date();
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  if (now < start) return 'upcoming';
-  if (now > end) return 'ending'; // Already ended but still showing
-  // Check if it's the last day
-  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (endDay.getTime() === today.getTime()) return 'ending';
-  return 'active';
-}
-
-function formatDateRange(startDate: string, endDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-  if (start.getTime() === end.getTime()) {
-    return start.toLocaleDateString('en-US', opts);
-  }
-  return `${start.toLocaleDateString('en-US', opts)} - ${end.toLocaleDateString('en-US', opts)}`;
-}
-
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFDF9',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
@@ -121,7 +120,7 @@ const styles = StyleSheet.create({
     height: 180,
   },
   noImage: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#EDE8E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -133,7 +132,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: '#1a5f2a',
+    backgroundColor: '#3A3830',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -156,7 +155,10 @@ const styles = StyleSheet.create({
   },
   saveIcon: {
     fontSize: 22,
-    color: '#f5a623',
+    color: '#ccc',
+  },
+  saveIconActive: {
+    color: '#C49A6C',
   },
   content: {
     padding: 14,
@@ -164,17 +166,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1C1A16',
     marginBottom: 2,
   },
   company: {
     fontSize: 14,
-    color: '#666',
+    color: '#7A7269',
     marginBottom: 6,
   },
   description: {
     fontSize: 14,
-    color: '#444',
+    color: '#5A5550',
     lineHeight: 20,
     marginBottom: 10,
   },
@@ -190,30 +192,20 @@ const styles = StyleSheet.create({
   },
   distance: {
     fontSize: 13,
-    color: '#1a5f2a',
+    color: '#3A3830',
     fontWeight: '600',
   },
   statusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 8,
-  },
-  active: {
-    backgroundColor: '#e8f5e9',
-  },
-  upcoming: {
-    backgroundColor: '#e3f2fd',
-  },
-  ending: {
-    backgroundColor: '#fff3e0',
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '700',
   },
   dates: {
     fontSize: 13,
-    color: '#888',
+    color: '#A8A09A',
   },
 });

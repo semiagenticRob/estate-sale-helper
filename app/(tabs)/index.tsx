@@ -13,6 +13,7 @@ import { useLocation } from '../../hooks/useLocation';
 import { DistanceSelector } from '../../components/DistanceSelector';
 import { DateFilter } from '../../components/DateFilter';
 import { DateRange } from '../../types';
+import { setLastSearch } from '../../lib/searchState';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -22,16 +23,15 @@ export default function HomeScreen() {
   const [dateRange, setDateRange] = useState<DateRange>('thisweek');
 
   const handleSearch = () => {
-    router.push({
-      pathname: '/results',
-      params: {
-        query,
-        latitude: location.latitude.toString(),
-        longitude: location.longitude.toString(),
-        radius: distance.toString(),
-        dateRange,
-      },
-    });
+    const params = {
+      query,
+      latitude: location.latitude.toString(),
+      longitude: location.longitude.toString(),
+      radius: distance.toString(),
+      dateRange,
+    };
+    setLastSearch(params);
+    router.push({ pathname: '/results', params });
   };
 
   return (
@@ -39,7 +39,7 @@ export default function HomeScreen() {
       {/* Location */}
       <View style={styles.locationContainer}>
         {location.loading ? (
-          <ActivityIndicator size="small" color="#1a5f2a" />
+          <ActivityIndicator size="small" color="#3A3830" />
         ) : (
           <>
             <Text style={styles.locationIcon}>📍</Text>
@@ -88,7 +88,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#FAF7F2',
   },
   content: {
     padding: 20,
@@ -105,12 +105,12 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 16,
-    color: '#333',
+    color: '#3A3830',
     fontWeight: '600',
   },
   locationError: {
     fontSize: 12,
-    color: '#e65100',
+    color: '#8B5E30',
     marginTop: -16,
     marginBottom: 16,
   },
@@ -120,34 +120,34 @@ const styles = StyleSheet.create({
   searchLabel: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1C1A16',
     marginBottom: 10,
   },
   searchInput: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFDF9',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#DDD8CE',
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: '#333',
+    color: '#1C1A16',
   },
   searchButton: {
-    backgroundColor: '#1a5f2a',
+    backgroundColor: '#3A3830',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
   },
   searchButtonText: {
-    color: '#fff',
+    color: '#FAF7F2',
     fontSize: 18,
     fontWeight: '700',
   },
   hint: {
     textAlign: 'center',
     fontSize: 13,
-    color: '#999',
+    color: '#A8A09A',
     marginTop: 12,
   },
 });

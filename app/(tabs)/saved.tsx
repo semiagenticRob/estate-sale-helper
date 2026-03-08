@@ -1,13 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
+import { HeaderBackButton } from '@react-navigation/elements';
 import { Image } from 'expo-image';
+import { getLastSearch } from '../../lib/searchState';
 import { useSavedSales } from '../../hooks/useSavedSales';
 import { mockSales } from '../../data/mockSales';
+import { getSaleStatus, formatDate } from '../../lib/dates';
 
 export default function SavedScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { savedSales, toggleSave } = useSavedSales();
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <HeaderBackButton
+          tintColor="#1C1A16"
+          onPress={() => {
+            const last = getLastSearch();
+            if (last) {
+              router.navigate({ pathname: '/results', params: last });
+            } else {
+              router.navigate('/');
+            }
+          }}
+        />
+      ),
+    });
+  }, [navigation, router]);
 
   // Get full sale data for saved IDs
   const savedSaleData = savedSales
@@ -37,11 +59,7 @@ export default function SavedScreen() {
         renderItem={({ item }) => {
           if (!item) return null;
           const headerImage = item.images[0]?.imageUrl;
-          const startDate = new Date(item.startDate);
-          const endDate = new Date(item.endDate);
-          const now = new Date();
-          const isActive = now >= startDate && now <= endDate;
-          const isUpcoming = now < startDate;
+          const status = getSaleStatus(item.startDate, item.endDate);
 
           return (
             <Pressable
@@ -66,19 +84,21 @@ export default function SavedScreen() {
                   <View
                     style={[
                       styles.statusDot,
-                      isActive
+                      status === 'active' || status === 'ending'
                         ? styles.statusActive
-                        : isUpcoming
+                        : status === 'upcoming'
                           ? styles.statusUpcoming
                           : styles.statusEnded,
                     ]}
                   />
                   <Text style={styles.statusLabel}>
-                    {isActive
+                    {status === 'active'
                       ? 'Happening Now'
-                      : isUpcoming
-                        ? `Starts ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                        : 'Ended'}
+                      : status === 'ending'
+                        ? 'Last Day'
+                        : status === 'upcoming'
+                          ? `Starts ${formatDate(item.startDate)}`
+                          : 'Ended'}
                   </Text>
                 </View>
               </View>
@@ -100,7 +120,7 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F0EAE2',
   },
   list: {
     paddingVertical: 8,
@@ -110,33 +130,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#FAF7F2',
   },
   emptyIcon: {
     fontSize: 48,
-    color: '#ccc',
+    color: '#DDD8CE',
     marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#1C1A16',
     marginBottom: 8,
   },
   emptyHint: {
     fontSize: 14,
-    color: '#888',
+    color: '#A8A09A',
     textAlign: 'center',
     lineHeight: 20,
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFDF9',
     marginHorizontal: 16,
     marginVertical: 6,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#3A3830',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -154,12 +174,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1C1A16',
     marginBottom: 2,
   },
   cardLocation: {
     fontSize: 13,
-    color: '#666',
+    color: '#7A7269',
     marginBottom: 6,
   },
   cardFooter: {
@@ -173,17 +193,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusActive: {
-    backgroundColor: '#4caf50',
+    backgroundColor: '#5A8A60',
   },
   statusUpcoming: {
-    backgroundColor: '#2196f3',
+    backgroundColor: '#5070A0',
   },
   statusEnded: {
-    backgroundColor: '#bbb',
+    backgroundColor: '#A8A09A',
   },
   statusLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#7A7269',
   },
   removeBtn: {
     justifyContent: 'center',
@@ -191,6 +211,6 @@ const styles = StyleSheet.create({
   },
   removeIcon: {
     fontSize: 24,
-    color: '#f5a623',
+    color: '#C49A6C',
   },
 });

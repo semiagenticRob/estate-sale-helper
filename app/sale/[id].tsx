@@ -11,6 +11,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { ImageGallery } from '../../components/ImageGallery';
 import { useSavedSales } from '../../hooks/useSavedSales';
 import { mockSales } from '../../data/mockSales';
+import { formatDate } from '../../lib/dates';
 
 export default function SaleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,13 +41,6 @@ export default function SaleDetailScreen() {
   };
 
   const saved = isSaved(sale.id);
-  const startDate = new Date(sale.startDate);
-  const endDate = new Date(sale.endDate);
-  const dateOpts: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  };
 
   return (
     <ScrollView style={styles.container}>
@@ -77,8 +71,7 @@ export default function SaleDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>📅</Text>
             <Text style={styles.infoText}>
-              {startDate.toLocaleDateString('en-US', dateOpts)} -{' '}
-              {endDate.toLocaleDateString('en-US', dateOpts)}
+              {formatDate(sale.startDate, true)} – {formatDate(sale.endDate, true)}
             </Text>
           </View>
           <View style={styles.infoRow}>
@@ -112,11 +105,6 @@ export default function SaleDetailScreen() {
           <Text style={styles.description}>{sale.description}</Text>
         </View>
 
-        {/* Reminder placeholder */}
-        <Pressable style={styles.reminderBtn}>
-          <Text style={styles.reminderBtnText}>🔔 Set Reminder</Text>
-          <Text style={styles.reminderHint}>Coming soon</Text>
-        </Pressable>
       </View>
     </ScrollView>
   );
@@ -125,7 +113,7 @@ export default function SaleDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFDF9',
   },
   centered: {
     flex: 1,
@@ -134,7 +122,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#999',
+    color: '#A8A09A',
   },
   content: {
     padding: 20,
@@ -148,7 +136,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1a1a1a',
+    color: '#1C1A16',
     flex: 1,
     marginRight: 12,
   },
@@ -157,23 +145,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#f5a623',
+    borderColor: '#C49A6C',
   },
   saveBtnActive: {
-    backgroundColor: '#fff8e7',
+    backgroundColor: '#F5EDDF',
   },
   saveBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#f5a623',
+    color: '#C49A6C',
   },
   company: {
     fontSize: 15,
-    color: '#666',
+    color: '#7A7269',
     marginBottom: 16,
   },
   infoSection: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#F5F0E8',
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
@@ -189,7 +177,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 15,
-    color: '#333',
+    color: '#3A3830',
     flex: 1,
   },
   actions: {
@@ -199,55 +187,36 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    backgroundColor: '#1a5f2a',
+    backgroundColor: '#3A3830',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
   },
   actionBtnSecondary: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFDF9',
     borderWidth: 1,
-    borderColor: '#1a5f2a',
+    borderColor: '#3A3830',
   },
   actionBtnText: {
-    color: '#fff',
+    color: '#FAF7F2',
     fontWeight: '700',
     fontSize: 14,
   },
   actionBtnTextSecondary: {
-    color: '#1a5f2a',
+    color: '#3A3830',
   },
   descriptionSection: {
-    marginBottom: 20,
+    marginBottom: 30,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1C1A16',
     marginBottom: 10,
   },
   description: {
     fontSize: 15,
-    color: '#444',
+    color: '#5A5550',
     lineHeight: 24,
-  },
-  reminderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 14,
-    borderRadius: 10,
-    gap: 8,
-    marginBottom: 30,
-  },
-  reminderBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  reminderHint: {
-    fontSize: 12,
-    color: '#999',
   },
 });

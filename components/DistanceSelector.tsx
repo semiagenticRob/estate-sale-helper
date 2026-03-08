@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: '#7A7269',
     marginBottom: 8,
   },
   options: {
@@ -52,20 +52,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#FFFDF9',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#DDD8CE',
   },
   optionSelected: {
-    backgroundColor: '#1a5f2a',
-    borderColor: '#1a5f2a',
+    backgroundColor: '#3A3830',
+    borderColor: '#3A3830',
   },
   optionText: {
     fontSize: 14,
-    color: '#444',
+    color: '#5A5550',
     fontWeight: '500',
   },
   optionTextSelected: {
-    color: '#fff',
+    color: '#FAF7F2',
   },
 });
