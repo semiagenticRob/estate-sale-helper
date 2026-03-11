@@ -1,10 +1,9 @@
-import React, { useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SaleCard } from '../../components/SaleCard';
 import { useSavedSales } from '../../hooks/useSavedSales';
-import { searchSales } from '../../lib/matching';
-import { mockSales } from '../../data/mockSales';
+import { searchSales } from '../../lib/salesApi';
 import { DateRange, SearchResult } from '../../types';
 
 const DATE_RANGE_LABELS: Record<DateRange, string> = {
@@ -25,19 +24,37 @@ export default function ResultsScreen() {
   }>();
   const { toggleSave, isSaved } = useSavedSales();
 
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const hasQuery = Boolean(params.query?.trim());
   const radius = parseInt(params.radius || '25', 10);
   const dateRange = (params.dateRange as DateRange) || 'thisweek';
 
-  const results: SearchResult[] = useMemo(() => {
-    return searchSales(
-      mockSales,
-      params.query || '',
-      parseFloat(params.latitude || '36.1627'),
-      parseFloat(params.longitude || '-86.7816'),
-      radius,
-      dateRange
-    );
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    searchSales({
+      query: params.query || '',
+      latitude: parseFloat(params.latitude || '36.1627'),
+      longitude: parseFloat(params.longitude || '-86.7816'),
+      radiusMiles: radius,
+      dateRange,
+    })
+      .then((data) => {
+        if (!cancelled) setResults(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Could not load results. Please try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [params.query, params.latitude, params.longitude, radius, dateRange]);
 
   return (
@@ -45,16 +62,24 @@ export default function ResultsScreen() {
       {/* Results header */}
       <View style={styles.header}>
         <Text style={styles.headerCount}>
-          {results.length} sale{results.length !== 1 ? 's' : ''}
-          {hasQuery ? ` for "${params.query}"` : ''}
+          {loading ? 'Searching…' : `${results.length} sale${results.length !== 1 ? 's' : ''}${hasQuery ? ` for "${params.query}"` : ''}`}
         </Text>
         <Text style={styles.headerMeta}>
           Within {radius} mi · {DATE_RANGE_LABELS[dateRange]}
         </Text>
       </View>
 
-      {results.length === 0 ? (
-        <View style={styles.empty}>
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#3A3830" />
+        </View>
+      ) : error ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyIcon}>⚠️</Text>
+          <Text style={styles.emptyText}>{error}</Text>
+        </View>
+      ) : results.length === 0 ? (
+        <View style={styles.centered}>
           <Text style={styles.emptyIcon}>🏠</Text>
           <Text style={styles.emptyText}>No sales found</Text>
           <Text style={styles.emptyHint}>
@@ -106,7 +131,7 @@ const styles = StyleSheet.create({
   list: {
     paddingVertical: 8,
   },
-  empty: {
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -121,6 +146,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1A16',
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptyHint: {
     fontSize: 14,
