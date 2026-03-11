@@ -3,12 +3,12 @@ export interface Sale {
   externalId?: string;
   title: string;
   companyName?: string;
-  address: string;
+  address: string | null;
   city: string;
   state: string;
   zipCode: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;   // null = address not yet disclosed
+  longitude: number | null;
   startDate: string; // ISO date string
   endDate: string;
   description: string;
@@ -35,7 +35,7 @@ export interface SearchQuery {
 export type DateRange = 'today' | 'tomorrow' | 'next3days' | 'thisweek';
 
 export interface SearchResult extends Sale {
-  distanceMiles: number;
+  distanceMiles: number | null; // null when sale has no coordinates yet
   matchPercent: number;
   headerImageUrl?: string;
 }

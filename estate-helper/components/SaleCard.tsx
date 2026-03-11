@@ -59,7 +59,13 @@ export function SaleCard({ sale, isSaved, onPress, onToggleSave }: SaleCardProps
 
         <View style={styles.footer}>
           <View style={styles.footerLeft}>
-            <Text style={styles.distance}>{sale.distanceMiles} mi away</Text>
+            {sale.distanceMiles !== null ? (
+              <Text style={styles.distance}>{sale.distanceMiles} mi away</Text>
+            ) : (
+              <View style={[styles.statusBadge, styles.noAddress]}>
+                <Text style={styles.statusText}>Address TBD</Text>
+              </View>
+            )}
             <View style={[styles.statusBadge, styles[saleStatus]]}>
               <Text style={styles.statusText}>
                 {saleStatus === 'active'
@@ -206,6 +212,9 @@ const styles = StyleSheet.create({
   },
   ending: {
     backgroundColor: '#fff3e0',
+  },
+  noAddress: {
+    backgroundColor: '#f0f0f0',
   },
   statusText: {
     fontSize: 11,

@@ -17,12 +17,10 @@ export function searchSales(
 
   return sales
     .map((sale) => {
-      const distanceMiles = getDistanceMiles(
-        userLat,
-        userLng,
-        sale.latitude,
-        sale.longitude
-      );
+      const hasCoords = sale.latitude != null && sale.longitude != null;
+      const distanceMiles = hasCoords
+        ? Math.round(getDistanceMiles(userLat, userLng, sale.latitude!, sale.longitude!) * 10) / 10
+        : null;
 
       const matchPercent =
         queryTerms.length === 0 ? 100 : calculateMatchPercent(sale, queryTerms);
@@ -32,12 +30,21 @@ export function searchSales(
 
       return {
         ...sale,
-        distanceMiles: Math.round(distanceMiles * 10) / 10,
+        distanceMiles,
         matchPercent,
         headerImageUrl,
       };
     })
     .filter((result) => {
+      // Sales with no address: always include (address TBD), skip distance filter
+      if (result.distanceMiles === null) {
+        // Still filter by date range and match
+        const saleStart = new Date(result.startDate);
+        const saleEnd = new Date(result.endDate);
+        if (saleEnd < startDate || saleStart > endDate) return false;
+        if (queryTerms.length > 0 && result.matchPercent === 0) return false;
+        return true;
+      }
       // Filter by distance
       if (result.distanceMiles > radiusMiles) return false;
       // Filter by date range
@@ -50,8 +57,11 @@ export function searchSales(
     })
     .sort((a, b) => {
       // Sort by match percent descending, then distance ascending
+      // Sales with no coordinates sort to the end
       if (b.matchPercent !== a.matchPercent)
         return b.matchPercent - a.matchPercent;
+      if (a.distanceMiles === null) return 1;
+      if (b.distanceMiles === null) return -1;
       return a.distanceMiles - b.distanceMiles;
     });
 }
