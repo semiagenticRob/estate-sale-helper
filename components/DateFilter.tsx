@@ -7,6 +7,7 @@ const DATE_OPTIONS: { value: DateRange; label: string }[] = [
   { value: 'tomorrow', label: 'Tomorrow' },
   { value: 'next3days', label: 'Next 3 Days' },
   { value: 'thisweek', label: 'This Week' },
+  { value: 'all', label: 'All Dates' },
 ];
 
 interface DateFilterProps {

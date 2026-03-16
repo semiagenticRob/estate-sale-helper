@@ -110,18 +110,33 @@ export default function HomeScreen() {
     setLocationError(null);
     setSuggestions([]);
 
-    if (!locationQuery.trim()) {
-      setLocationError('Please enter a city, state, or zip code.');
-      return;
-    }
+    const isStatewide = !locationQuery.trim();
 
     let lat: number;
     let lng: number;
+    let searchRadius: number;
+    let stateLabel = '';
 
-    if (resolvedCoords) {
-      // Use coords from GPS pre-fill or selected suggestion
+    if (isStatewide) {
+      // No location entered — use GPS or default, with a huge radius to cover the state
+      if (resolvedCoords) {
+        lat = resolvedCoords.lat;
+        lng = resolvedCoords.lng;
+      } else if (!location.loading && !location.error) {
+        lat = location.latitude;
+        lng = location.longitude;
+      } else {
+        lat = location.latitude;
+        lng = location.longitude;
+      }
+      searchRadius = 500;
+      // Extract state name from the city string (e.g. "Denver, Colorado")
+      const parts = location.city.split(',').map((s) => s.trim());
+      stateLabel = parts.length > 1 ? parts[parts.length - 1] : '';
+    } else if (resolvedCoords) {
       lat = resolvedCoords.lat;
       lng = resolvedCoords.lng;
+      searchRadius = distance;
     } else {
       // Fallback: geocode via Nominatim directly
       try {
@@ -140,14 +155,16 @@ export default function HomeScreen() {
         setLocationError('Could not find that location. Please try again.');
         return;
       }
+      searchRadius = distance;
     }
 
     const params = {
       query,
       latitude: lat.toString(),
       longitude: lng.toString(),
-      radius: distance.toString(),
+      radius: searchRadius.toString(),
       dateRange,
+      ...(isStatewide && stateLabel ? { statewide: stateLabel } : {}),
     };
     setLastSearch(params);
     router.push({ pathname: '/results', params });
@@ -228,7 +245,7 @@ export default function HomeScreen() {
 
       {/* Hint */}
       <Text style={styles.hint}>
-        Leave the search empty to see all nearby sales
+        Leave location empty to see all sales in your state
       </Text>
     </ScrollView>
   );

@@ -22,9 +22,9 @@ function toRadians(degrees: number): number {
   return degrees * (Math.PI / 180);
 }
 
-// Default location (Nashville, TN) used when GPS is unavailable
+// Default location (Denver, CO) used when GPS is unavailable
 export const DEFAULT_LOCATION = {
-  latitude: 36.1627,
-  longitude: -86.7816,
-  city: 'Nashville, TN',
+  latitude: 39.7392,
+  longitude: -104.9903,
+  city: 'Denver, Colorado',
 };

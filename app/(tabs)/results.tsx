@@ -11,6 +11,7 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
   tomorrow: 'Tomorrow',
   next3days: 'Next 3 Days',
   thisweek: 'This Week',
+  all: 'All Dates',
 };
 
 export default function ResultsScreen() {
@@ -21,6 +22,7 @@ export default function ResultsScreen() {
     longitude: string;
     radius: string;
     dateRange: string;
+    statewide?: string;
   }>();
   const { toggleSave, isSaved } = useSavedSales();
 
@@ -39,10 +41,11 @@ export default function ResultsScreen() {
 
     searchSales({
       query: params.query || '',
-      latitude: parseFloat(params.latitude || '36.1627'),
-      longitude: parseFloat(params.longitude || '-86.7816'),
+      latitude: parseFloat(params.latitude || '39.7392'),
+      longitude: parseFloat(params.longitude || '-104.9903'),
       radiusMiles: radius,
       dateRange,
+      stateCode: params.statewide || undefined,
     })
       .then((data) => {
         if (!cancelled) setResults(data);
@@ -65,7 +68,7 @@ export default function ResultsScreen() {
           {loading ? 'Searching…' : `${results.length} sale${results.length !== 1 ? 's' : ''}${hasQuery ? ` for "${params.query}"` : ''}`}
         </Text>
         <Text style={styles.headerMeta}>
-          Within {radius} mi · {DATE_RANGE_LABELS[dateRange]}
+          {params.statewide ? `All sales in ${params.statewide}` : `Within ${radius} mi`} · {DATE_RANGE_LABELS[dateRange]}
         </Text>
       </View>
 

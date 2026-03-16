@@ -1,17 +1,20 @@
-import React, { useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
-import { useRouter, useNavigation } from 'expo-router';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { useRouter, useNavigation, useFocusEffect } from 'expo-router';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { Image } from 'expo-image';
 import { getLastSearch } from '../../lib/searchState';
 import { useSavedSales } from '../../hooks/useSavedSales';
-import { mockSales } from '../../data/mockSales';
+import { getSaleById } from '../../lib/salesApi';
+import { Sale } from '../../types';
 import { getSaleStatus, formatDate } from '../../lib/dates';
 
 export default function SavedScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { savedSales, toggleSave } = useSavedSales();
+  const [salesData, setSalesData] = useState<(Sale & { savedAt: string })[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     navigation.setOptions({
@@ -31,13 +34,38 @@ export default function SavedScreen() {
     });
   }, [navigation, router]);
 
-  // Get full sale data for saved IDs
-  const savedSaleData = savedSales
-    .map((saved) => {
-      const sale = mockSales.find((s) => s.id === saved.saleId);
-      return sale ? { ...sale, savedAt: saved.savedAt } : null;
-    })
-    .filter(Boolean);
+  // Fetch full sale data from Supabase whenever saved list changes or tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function fetchSales() {
+        setLoading(true);
+        const results: (Sale & { savedAt: string })[] = [];
+        for (const saved of savedSales) {
+          const sale = await getSaleById(saved.saleId);
+          if (sale && !cancelled) {
+            results.push({ ...sale, savedAt: saved.savedAt });
+          }
+        }
+        if (!cancelled) {
+          setSalesData(results);
+          setLoading(false);
+        }
+      }
+      fetchSales();
+      return () => { cancelled = true; };
+    }, [savedSales])
+  );
+
+  const savedSaleData = salesData;
+
+  if (loading && savedSales.length > 0) {
+    return (
+      <View style={styles.empty}>
+        <ActivityIndicator size="large" color="#3A3830" />
+      </View>
+    );
+  }
 
   if (savedSaleData.length === 0) {
     return (

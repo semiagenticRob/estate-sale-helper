@@ -17,48 +17,13 @@ export function useLocation(): LocationState {
     error: null,
   });
 
+  // TODO: Remove this override once done testing — forces Denver, CO
   useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            error: 'Location permission denied. Using default location.',
-          }));
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        // Reverse geocode to get city name
-        const [place] = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-
-        const city = place
-          ? `${place.city || place.subregion || 'Unknown'}, ${place.region || ''}`
-          : 'Unknown location';
-
-        setState({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          city,
-          loading: false,
-          error: null,
-        });
-      } catch {
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          error: 'Could not get location. Using default.',
-        }));
-      }
-    })();
+    setState({
+      ...DEFAULT_LOCATION,
+      loading: false,
+      error: null,
+    });
   }, []);
 
   return state;

@@ -32,7 +32,7 @@ export interface SearchQuery {
   dateRange: DateRange;
 }
 
-export type DateRange = 'today' | 'tomorrow' | 'next3days' | 'thisweek';
+export type DateRange = 'today' | 'tomorrow' | 'next3days' | 'thisweek' | 'all';
 
 export interface SearchResult extends Sale {
   distanceMiles: number;

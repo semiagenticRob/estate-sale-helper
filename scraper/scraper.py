@@ -103,10 +103,34 @@ def geocode(address: str, city: str, state: str, zip_code: str) -> tuple[Optiona
     return None, None
 
 
+CDN_IMAGE_RE = re.compile(r'https?://picturescdn\.estatesales\.net/[^\s"<>]+\.jpg')
+
+
+def extract_page_images(raw_html: str, sale_id: str) -> list[str]:
+    """Extract unique sale-item image URLs from the raw HTML via regex."""
+    seen = set()
+    urls = []
+    # Only include images under the sale's ID path, skip org logos and other assets
+    prefix = f'picturescdn.estatesales.net/{sale_id}/'
+    for match in CDN_IMAGE_RE.findall(raw_html):
+        if prefix in match and match not in seen:
+            seen.add(match)
+            urls.append(match)
+    return urls
+
+
 def scrape_sale(url: str) -> Optional[dict]:
-    """Fetch a sale detail page and return parsed data, or None on failure."""
-    soup = fetch(url)
-    if not soup:
+    """Fetch a sale detail page and return (parsed data, raw_html), or None on failure."""
+    try:
+        with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as client:
+            response = client.get(url)
+            if response.status_code != 200:
+                print(f'  HTTP {response.status_code} for {url}')
+                return None
+            raw_html = response.text
+            soup = BeautifulSoup(raw_html, 'lxml')
+    except Exception as e:
+        print(f'  Error fetching {url}: {e}')
         return None
 
     for script in soup.find_all('script', type='application/ld+json'):
@@ -114,7 +138,14 @@ def scrape_sale(url: str) -> Optional[dict]:
             data = json.loads(script.string or '')
             if data.get('@type') != 'SaleEvent':
                 continue
-            return parse_jsonld(data, url)
+            sale = parse_jsonld(data, url)
+            # Supplement JSON-LD images (usually 5) with all CDN images from raw HTML
+            jsonld_images = set(sale['images'])
+            for img_url in extract_page_images(raw_html, sale['external_id']):
+                if img_url not in jsonld_images:
+                    sale['images'].append(img_url)
+                    jsonld_images.add(img_url)
+            return sale
         except (json.JSONDecodeError, AttributeError):
             continue
 
