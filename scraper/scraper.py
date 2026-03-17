@@ -43,16 +43,13 @@ HEADERS = {
     'Accept-Language': 'en-US,en;q=0.9',
 }
 
-# Cities to scrape per state — expand as needed
+# All Colorado cities listed on estatesales.net/CO
+# Each city page covers surrounding areas too (e.g. Denver includes Aurora, Lakewood, etc.)
 CITIES = {
-    'TN': [
-        'Nashville', 'Memphis', 'Knoxville', 'Chattanooga',
-        'Murfreesboro', 'Franklin', 'Hendersonville', 'Brentwood',
-        'Clarksville', 'Jackson',
-    ],
     'CO': [
         'Denver', 'Colorado-Springs', 'Boulder', 'Fort-Collins',
-        'Aurora', 'Lakewood', 'Arvada', 'Westminster', 'Pueblo', 'Longmont',
+        'Grand-Junction', 'Greeley', 'Pueblo',
+        'Canon-City', 'Durango', 'Edwards', 'Fort-Morgan', 'Montrose',
     ],
 }
 
@@ -279,7 +276,7 @@ def upsert_images(sale_id: str, image_urls: list[str]):
         supabase.table('sale_images').delete().eq('sale_id', sale_id).execute()
         supabase.table('sale_images').insert([
             {'sale_id': sale_id, 'image_url': url, 'position': i}
-            for i, url in enumerate(image_urls[:10])  # cap at 10 images per sale
+            for i, url in enumerate(image_urls[:20])  # cap at 20 images per sale
         ]).execute()
     except Exception as e:
         print(f'    Image error: {e}')
