@@ -118,11 +118,9 @@ function getDateBounds(
       return { startDate: today, endDate: end };
     }
     case 'all': {
-      const past = new Date(today);
-      past.setFullYear(past.getFullYear() - 1);
       const future = new Date(today);
       future.setFullYear(future.getFullYear() + 1);
-      return { startDate: past, endDate: future };
+      return { startDate: today, endDate: future };
     }
   }
 }

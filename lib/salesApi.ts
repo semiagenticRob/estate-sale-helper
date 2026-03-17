@@ -30,12 +30,10 @@ function getDateBounds(range: DateRange): { startDate: string; endDate: string }
       return { startDate: fmt(today), endDate: fmt(d) };
     }
     case 'all': {
-      // Wide range: 1 year back to 1 year forward
-      const past = new Date(today);
-      past.setFullYear(past.getFullYear() - 1);
+      // Today forward — never show ended sales
       const future = new Date(today);
       future.setFullYear(future.getFullYear() + 1);
-      return { startDate: fmt(past), endDate: fmt(future) };
+      return { startDate: fmt(today), endDate: fmt(future) };
     }
   }
 }
