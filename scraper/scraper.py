@@ -216,8 +216,12 @@ def parse_jsonld(data: dict, url: str) -> dict:
     # Coordinates: check JSON-LD geo sub-object first, then fall back to geocoding
     lat = geo.get('latitude') or location.get('latitude')
     lng = geo.get('longitude') or location.get('longitude')
-    if (not lat or not lng) and street and city and state:
-        lat, lng = geocode(street, city, state, zip_code or '')
+    if not lat or not lng:
+        # Try full address first, then fall back to city/state/zip
+        if street and city and state:
+            lat, lng = geocode(street, city, state, zip_code or '')
+        elif city and state:
+            lat, lng = geocode('', city, state, zip_code or '')
 
     # Truncate ISO timestamps to date-only (YYYY-MM-DD)
     start_date = (data.get('startDate') or '')[:10] or None
