@@ -102,7 +102,9 @@ export function SaleCard({ sale, isSaved, hasQuery, onPress, onToggleSave }: Sal
 
         <View style={styles.footer}>
           <View style={styles.footerLeft}>
-            <Text style={styles.distance}>{sale.distanceMiles} mi</Text>
+            {sale.distanceMiles > 0 && (
+              <Text style={styles.distance}>{sale.distanceMiles} mi</Text>
+            )}
             <View style={[styles.statusBadge, { backgroundColor: STATUS_BADGE_COLORS[status] }]}>
               <Text style={[styles.statusText, { color: STATUS_TEXT_COLORS[status] }]}>
                 {STATUS_LABELS[status]}
