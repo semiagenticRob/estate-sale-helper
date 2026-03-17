@@ -103,10 +103,14 @@ function getDateBounds(
       tomorrow.setDate(tomorrow.getDate() + 1);
       return { startDate: today, endDate: tomorrow };
     }
-    case 'next3days': {
-      const end = new Date(today);
-      end.setDate(end.getDate() + 2);
-      return { startDate: today, endDate: end };
+    case 'thisweekend': {
+      const day = today.getDay();
+      const satOffset = day === 0 ? 6 : 6 - day;
+      const sat = new Date(today);
+      sat.setDate(sat.getDate() + satOffset);
+      const sun = new Date(sat);
+      sun.setDate(sun.getDate() + 1);
+      return { startDate: sat, endDate: sun };
     }
     case 'thisweek': {
       const end = new Date(today);

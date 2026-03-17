@@ -1,33 +1,43 @@
 import { Stack } from 'expo-router';
-import { Image } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SavedSalesProvider } from '../context/SavedSalesContext';
-
-const DorisHeader = () => (
-  <Image
-    source={require('../assets/doris.png')}
-    style={{ width: 40, height: 40, marginRight: 4 }}
-    resizeMode="contain"
-  />
-);
+import { useFonts, CormorantGaramond_500Medium } from '@expo-google-fonts/cormorant-garamond';
+import { Lora_400Regular } from '@expo-google-fonts/lora';
+import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
+import { colors, fonts } from '../lib/theme';
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    CormorantGaramond_500Medium,
+    Lora_400Regular,
+    DMSans_400Regular,
+    DMSans_500Medium,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.backgroundPrimary }}>
+        <ActivityIndicator size="large" color={colors.accentPrimary} />
+      </View>
+    );
+  }
+
   return (
     <SavedSalesProvider>
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: '#F5F0E8' },
-        headerTintColor: '#1C1A16',
-        headerTitleStyle: { fontWeight: '700', color: '#1C1A16' },
-        headerShadowVisible: false,
-        headerRight: () => <DorisHeader />,
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="sale/[id]"
-        options={{ title: 'Sale Details' }}
-      />
-    </Stack>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.backgroundSecondary },
+          headerTintColor: '#3B2A1A',
+          headerTitleStyle: { fontWeight: '800', fontSize: 20, color: '#3B2A1A', fontFamily: fonts.uiSansMedium },
+          headerShadowVisible: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="sale/[id]"
+          options={{ title: 'Sale Details', headerBackTitle: 'Back' }}
+        />
+      </Stack>
     </SavedSalesProvider>
   );
 }

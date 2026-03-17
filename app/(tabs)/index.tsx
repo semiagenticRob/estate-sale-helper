@@ -8,13 +8,16 @@ import {
   Pressable,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocation } from '../../hooks/useLocation';
 import { DistanceSelector } from '../../components/DistanceSelector';
-import { DateFilter } from '../../components/DateFilter';
+import { DateFilter, DATE_RANGE_DISPLAY } from '../../components/DateFilter';
 import { DateRange } from '../../types';
 import { setLastSearch } from '../../lib/searchState';
+import { colors, fonts, fontSize, spacing, radii } from '../../lib/theme';
 
 interface NominatimResult {
   place_id: number;
@@ -44,18 +47,17 @@ function getSuggestionLabel(r: NominatimResult): string {
 export default function HomeScreen() {
   const router = useRouter();
   const location = useLocation();
-  const [query, setQuery] = useState('');
   const [distance, setDistance] = useState(25);
-  const [dateRange, setDateRange] = useState<DateRange>('thisweek');
+  const [dateRange, setDateRange] = useState<DateRange>('thisweekend');
   const [locationQuery, setLocationQuery] = useState('');
   const [locationError, setLocationError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [resolvedCoords, setResolvedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
   const hasPopulated = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Pre-populate with GPS city once on successful detection, storing coords
   useEffect(() => {
     if (!location.loading && !hasPopulated.current) {
       hasPopulated.current = true;
@@ -103,6 +105,7 @@ export default function HomeScreen() {
     setLocationQuery(getSuggestionLabel(item));
     setResolvedCoords({ lat: parseFloat(item.lat), lng: parseFloat(item.lon) });
     setSuggestions([]);
+    setIsEditingLocation(false);
     Keyboard.dismiss();
   };
 
@@ -118,7 +121,6 @@ export default function HomeScreen() {
     let stateLabel = '';
 
     if (isStatewide) {
-      // No location entered — use GPS or default, with a huge radius to cover the state
       if (resolvedCoords) {
         lat = resolvedCoords.lat;
         lng = resolvedCoords.lng;
@@ -130,7 +132,6 @@ export default function HomeScreen() {
         lng = location.longitude;
       }
       searchRadius = 500;
-      // Extract state name from the city string (e.g. "Denver, Colorado")
       const parts = location.city.split(',').map((s) => s.trim());
       stateLabel = parts.length > 1 ? parts[parts.length - 1] : '';
     } else if (resolvedCoords) {
@@ -138,7 +139,6 @@ export default function HomeScreen() {
       lng = resolvedCoords.lng;
       searchRadius = distance;
     } else {
-      // Fallback: geocode via Nominatim directly
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery.trim())}&format=json&limit=1&countrycodes=us`,
@@ -159,7 +159,7 @@ export default function HomeScreen() {
     }
 
     const params = {
-      query,
+      query: '',
       latitude: lat.toString(),
       longitude: lng.toString(),
       radius: searchRadius.toString(),
@@ -170,66 +170,80 @@ export default function HomeScreen() {
     router.push({ pathname: '/results', params });
   };
 
+  const buttonLabel = `Show sales ${DATE_RANGE_DISPLAY[dateRange]} \u00B7 ${distance} mi`;
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* Location Input */}
-      <View style={styles.locationSection}>
-        <Text style={styles.searchLabel}>Where are you looking?</Text>
-        <View style={styles.locationInputRow}>
-          {location.loading ? (
-            <ActivityIndicator size="small" color="#3A3830" style={styles.locationSpinner} />
-          ) : !location.error ? (
-            <Text style={styles.locationPin}>📍</Text>
-          ) : null}
-          <TextInput
-            style={[styles.locationInput, location.loading && styles.locationInputDisabled]}
-            placeholder="City, state or zip code"
-            placeholderTextColor="#aaa"
-            value={locationQuery}
-            onChangeText={handleLocationChange}
-            editable={!location.loading}
-            returnKeyType="next"
-            autoCorrect={false}
-          />
-          {isFetchingSuggestions && (
-            <ActivityIndicator size="small" color="#A8A09A" />
-          )}
-        </View>
-        {suggestions.length > 0 && (
-          <View style={styles.suggestionsContainer}>
-            {suggestions.map((item, index) => (
-              <Pressable
-                key={item.place_id}
-                style={[
-                  styles.suggestionRow,
-                  index < suggestions.length - 1 && styles.suggestionBorder,
-                ]}
-                onPress={() => selectSuggestion(item)}
-              >
-                <Text style={styles.suggestionText}>{getSuggestionLabel(item)}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-        {locationError && <Text style={styles.locationError}>{locationError}</Text>}
+    <View style={styles.wrapper}>
+      {/* Mascot overlapping header */}
+      <View style={styles.mascotContainer}>
+        <Image
+          source={require('../../assets/dodo-mascot.png')}
+          style={styles.mascotImage}
+          resizeMode="cover"
+        />
       </View>
 
-      {/* Search Input */}
-      <View style={styles.searchSection}>
-        <Text style={styles.searchLabel}>What are you looking for?</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder='e.g. "vintage furniture", "vinyl records", "jewelry"'
-          placeholderTextColor="#aaa"
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-          onSubmitEditing={handleSearch}
-        />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+      {/* Location Row */}
+      <View style={styles.locationSection}>
+        <Text style={styles.sectionLabel}>WHERE?</Text>
+        {isEditingLocation ? (
+          <>
+            <View style={styles.locationInputRow}>
+              <TextInput
+                style={styles.locationInput}
+                placeholder="City, state or zip code"
+                placeholderTextColor={colors.placeholder}
+                value={locationQuery}
+                onChangeText={handleLocationChange}
+                autoFocus
+                returnKeyType="done"
+                autoCorrect={false}
+                onBlur={() => {
+                  if (locationQuery.trim()) setIsEditingLocation(false);
+                }}
+              />
+              {isFetchingSuggestions && (
+                <ActivityIndicator size="small" color={colors.textSecondary} />
+              )}
+            </View>
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {suggestions.map((item, index) => (
+                  <Pressable
+                    key={item.place_id}
+                    style={[
+                      styles.suggestionRow,
+                      index < suggestions.length - 1 && styles.suggestionBorder,
+                    ]}
+                    onPress={() => selectSuggestion(item)}
+                  >
+                    <Text style={styles.suggestionText}>{getSuggestionLabel(item)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {locationError && <Text style={styles.locationError}>{locationError}</Text>}
+          </>
+        ) : (
+          <Pressable style={styles.locationDisplay} onPress={() => setIsEditingLocation(true)}>
+            {location.loading ? (
+              <ActivityIndicator size="small" color={colors.accentPrimary} />
+            ) : (
+              <>
+                <Ionicons name="location-sharp" size={14} color="#7A5C3F" />
+                <Text style={styles.locationText}>
+                  {locationQuery || 'Tap to set location'}
+                </Text>
+                <Text style={styles.locationHint}>{'\u00B7'} tap to change</Text>
+              </>
+            )}
+          </Pressable>
+        )}
       </View>
 
       {/* Distance Selector */}
@@ -240,113 +254,127 @@ export default function HomeScreen() {
 
       {/* Search Button */}
       <Pressable style={styles.searchButton} onPress={handleSearch}>
-        <Text style={styles.searchButtonText}>Find Estate Sales</Text>
+        <Text style={styles.searchButtonText}>{buttonLabel}</Text>
       </Pressable>
-
-      {/* Hint */}
-      <Text style={styles.hint}>
-        Leave location empty to see all sales in your state
-      </Text>
     </ScrollView>
+    </View>
   );
 }
 
+const MASCOT_SIZE = 72;
+
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#F5EFE8',
+  },
+  mascotContainer: {
+    position: 'absolute',
+    top: -MASCOT_SIZE / 2,
+    left: spacing.lg,
+    width: MASCOT_SIZE,
+    height: MASCOT_SIZE,
+    borderRadius: MASCOT_SIZE / 2,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#C4A882',
+    overflow: 'hidden',
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mascotImage: {
+    width: MASCOT_SIZE - 4,
+    height: MASCOT_SIZE - 4,
+    borderRadius: (MASCOT_SIZE - 4) / 2,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F2',
   },
   content: {
-    padding: 20,
-    paddingTop: 24,
+    padding: spacing.lg,
+    paddingTop: MASCOT_SIZE / 2 + 12,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '700',
+    color: '#3B2A1A',
+    marginBottom: 10,
+    letterSpacing: 0.8,
   },
   locationSection: {
-    marginBottom: 20,
+    marginBottom: 28,
+  },
+  locationDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  locationText: {
+    fontSize: 15,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '600',
+    color: '#3B2A1A',
+  },
+  locationHint: {
+    fontSize: 13,
+    fontFamily: fonts.uiSans,
+    color: '#7A5C3F',
   },
   locationInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: '#DDD8CE',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-  },
-  locationPin: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  locationSpinner: {
-    marginRight: 8,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: '#C4A882',
+    borderRadius: radii.small,
+    paddingHorizontal: 12,
+    height: 44,
   },
   locationInput: {
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#1C1A16',
-  },
-  locationInputDisabled: {
-    opacity: 0.5,
+    fontSize: 15,
+    color: '#3B2A1A',
+    fontFamily: fonts.uiSans,
   },
   suggestionsContainer: {
-    backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: '#DDD8CE',
-    borderRadius: 12,
-    marginTop: 4,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: '#C4A882',
+    borderRadius: radii.small,
+    marginTop: spacing.xs,
     overflow: 'hidden',
   },
   suggestionRow: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: spacing.md,
+    paddingHorizontal: 12,
   },
   suggestionBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDE9E0',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#C4A882',
   },
   suggestionText: {
     fontSize: 15,
-    color: '#1C1A16',
+    color: '#3B2A1A',
+    fontFamily: fonts.uiSans,
   },
   locationError: {
-    fontSize: 12,
-    color: '#8B5E30',
-    marginTop: 6,
-  },
-  searchSection: {
-    marginBottom: 20,
-  },
-  searchLabel: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1C1A16',
-    marginBottom: 10,
-  },
-  searchInput: {
-    backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: '#DDD8CE',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: '#1C1A16',
+    fontSize: fontSize.uiLabel,
+    color: colors.destructive,
+    marginTop: spacing.sm,
   },
   searchButton: {
-    backgroundColor: '#3A3830',
-    paddingVertical: 16,
+    backgroundColor: '#7A5C3F',
     borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
   },
   searchButtonText: {
-    color: '#FAF7F2',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  hint: {
-    textAlign: 'center',
-    fontSize: 13,
-    color: '#A8A09A',
-    marginTop: 12,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '600',
   },
 });

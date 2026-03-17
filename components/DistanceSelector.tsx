@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { colors, fonts, fontSize, spacing, radii } from '../lib/theme';
 
 const DISTANCE_OPTIONS = [5, 10, 25, 50, 100];
 
@@ -11,7 +12,7 @@ interface DistanceSelectorProps {
 export function DistanceSelector({ selected, onSelect }: DistanceSelectorProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Distance</Text>
+      <Text style={styles.label}>HOW FAR?</Text>
       <View style={styles.options}>
         {DISTANCE_OPTIONS.map((miles) => (
           <Pressable
@@ -36,36 +37,43 @@ export function DistanceSelector({ selected, onSelect }: DistanceSelectorProps) 
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.xl,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#7A7269',
-    marginBottom: 8,
+    fontSize: 16,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '700',
+    color: '#3B2A1A',
+    marginBottom: 10,
+    letterSpacing: 0.8,
   },
   options: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   option: {
-    paddingHorizontal: 14,
+    flex: 1,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: '#DDD8CE',
+    borderRadius: radii.small,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: '#C4A882',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   optionSelected: {
-    backgroundColor: '#3A3830',
-    borderColor: '#3A3830',
+    backgroundColor: '#7A5C3F',
+    borderColor: '#7A5C3F',
   },
   optionText: {
     fontSize: 14,
-    color: '#5A5550',
+    color: '#5C4A38',
+    fontFamily: fonts.uiSansMedium,
     fontWeight: '500',
   },
   optionTextSelected: {
-    color: '#FAF7F2',
+    color: '#FFFFFF',
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '600',
   },
 });

@@ -1,14 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { DateRange } from '../types';
+import { colors, fonts, fontSize, spacing, radii } from '../lib/theme';
 
-const DATE_OPTIONS: { value: DateRange; label: string }[] = [
+const DATE_OPTIONS: { value: DateRange; label: string; span2?: boolean }[] = [
   { value: 'today', label: 'Today' },
   { value: 'tomorrow', label: 'Tomorrow' },
-  { value: 'next3days', label: 'Next 3 Days' },
+  { value: 'thisweekend', label: 'This Weekend' },
   { value: 'thisweek', label: 'This Week' },
-  { value: 'all', label: 'All Dates' },
+  { value: 'all', label: 'All Upcoming', span2: true },
 ];
+
+export const DATE_RANGE_DISPLAY: Record<DateRange, string> = {
+  today: 'today',
+  tomorrow: 'tomorrow',
+  thisweekend: 'this weekend',
+  thisweek: 'this week',
+  all: 'all upcoming',
+};
 
 interface DateFilterProps {
   selected: DateRange;
@@ -18,13 +27,14 @@ interface DateFilterProps {
 export function DateFilter({ selected, onSelect }: DateFilterProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>When</Text>
-      <View style={styles.options}>
+      <Text style={styles.label}>WHEN?</Text>
+      <View style={styles.grid}>
         {DATE_OPTIONS.map((option) => (
           <Pressable
             key={option.value}
             style={[
               styles.option,
+              option.span2 && styles.optionSpan2,
               selected === option.value && styles.optionSelected,
             ]}
             onPress={() => onSelect(option.value)}
@@ -46,37 +56,47 @@ export function DateFilter({ selected, onSelect }: DateFilterProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 32,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#7A7269',
-    marginBottom: 8,
+    fontSize: 16,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '700',
+    color: '#3B2A1A',
+    marginBottom: 10,
+    letterSpacing: 0.8,
   },
-  options: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   option: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: '#DDD8CE',
+    width: '48.5%',
+    paddingVertical: 10,
+    borderRadius: radii.small,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: '#C4A882',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionSpan2: {
+    width: '100%',
   },
   optionSelected: {
-    backgroundColor: '#3A3830',
-    borderColor: '#3A3830',
+    backgroundColor: '#7A5C3F',
+    borderColor: '#7A5C3F',
   },
   optionText: {
     fontSize: 14,
-    color: '#5A5550',
+    color: '#5C4A38',
+    fontFamily: fonts.uiSansMedium,
     fontWeight: '500',
   },
   optionTextSelected: {
-    color: '#FAF7F2',
+    color: '#FFFFFF',
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '600',
   },
 });

@@ -5,11 +5,12 @@ import { SaleCard } from '../../components/SaleCard';
 import { useSavedSales } from '../../hooks/useSavedSales';
 import { searchSales } from '../../lib/salesApi';
 import { DateRange, SearchResult } from '../../types';
+import { colors, fonts, fontSize, spacing } from '../../lib/theme';
 
 const DATE_RANGE_LABELS: Record<DateRange, string> = {
   today: 'Today',
   tomorrow: 'Tomorrow',
-  next3days: 'Next 3 Days',
+  thisweekend: 'This Weekend',
   thisweek: 'This Week',
   all: 'All Dates',
 };
@@ -74,16 +75,16 @@ export default function ResultsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#3A3830" />
+          <ActivityIndicator size="large" color={colors.accentPrimary} />
         </View>
       ) : error ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>⚠️</Text>
+          <Text style={styles.emptyIcon}>Error</Text>
           <Text style={styles.emptyText}>{error}</Text>
         </View>
       ) : results.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🏠</Text>
+          <Text style={styles.emptyIcon}>No Results</Text>
           <Text style={styles.emptyText}>No sales found</Text>
           <Text style={styles.emptyHint}>
             Try expanding your distance or date range
@@ -112,27 +113,29 @@ export default function ResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0EAE2',
+    backgroundColor: colors.backgroundPrimary,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F5F0E8',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: 1,
-    borderBottomColor: '#EDE8E0',
+    borderBottomColor: colors.separator,
   },
   headerCount: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1C1A16',
+    fontSize: fontSize.bodySmall,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.textPrimary,
   },
   headerMeta: {
-    fontSize: 13,
-    color: '#A8A09A',
+    fontSize: fontSize.uiCaption,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
     marginTop: 2,
   },
   list: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   centered: {
     flex: 1,
@@ -142,18 +145,19 @@ const styles = StyleSheet.create({
   },
   emptyIcon: {
     fontSize: 48,
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1A16',
-    marginBottom: 8,
+    fontFamily: fonts.bodySerif,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   emptyHint: {
-    fontSize: 14,
-    color: '#A8A09A',
+    fontSize: fontSize.uiButton,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
     textAlign: 'center',
   },
 });

@@ -119,8 +119,28 @@ def extract_page_images(raw_html: str, sale_id: str) -> list[str]:
     return urls
 
 
+def extract_terms(soup: BeautifulSoup) -> Optional[str]:
+    """Extract Terms & Conditions text from the page HTML.
+
+    The terms live inside a Material expansion panel whose header contains
+    the text 'Terms' (e.g. 'Terms & Conditions'). We grab all the text
+    from the panel body.
+    """
+    # Look for any element whose text contains 'Terms' that acts as a panel header
+    for header in soup.find_all(string=re.compile(r'Terms\s*[&and]*\s*Conditions', re.I)):
+        # Walk up to the expansion panel container
+        panel = header.find_parent('mat-expansion-panel') or header.find_parent('div')
+        if panel:
+            text = panel.get_text(separator=' ', strip=True)
+            # Remove the header text itself and clean up
+            text = re.sub(r'Terms\s*[&and]*\s*Conditions\s*', '', text, count=1, flags=re.I).strip()
+            if text:
+                return text
+    return None
+
+
 def scrape_sale(url: str) -> Optional[dict]:
-    """Fetch a sale detail page and return (parsed data, raw_html), or None on failure."""
+    """Fetch a sale detail page and return parsed data, or None on failure."""
     try:
         with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as client:
             response = client.get(url)
@@ -139,6 +159,8 @@ def scrape_sale(url: str) -> Optional[dict]:
             if data.get('@type') != 'SaleEvent':
                 continue
             sale = parse_jsonld(data, url)
+            # Extract Terms & Conditions from page HTML
+            sale['terms'] = extract_terms(soup)
             # Supplement JSON-LD images (usually 5) with all CDN images from raw HTML
             jsonld_images = set(sale['images'])
             for img_url in extract_page_images(raw_html, sale['external_id']):
@@ -212,6 +234,7 @@ def upsert_sale(sale: dict) -> Optional[str]:
             'p_end_date': sale.get('end_date'),
             'p_description': sale.get('description', ''),
             'p_url': sale['url'],
+            'p_terms': sale.get('terms'),
         }).execute()
         return result.data
     except Exception as e:

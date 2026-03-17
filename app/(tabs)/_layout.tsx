@@ -1,30 +1,27 @@
 import { Tabs } from 'expo-router';
-import { Text, Image } from 'react-native';
-
-const DorisHeader = () => (
-  <Image
-    source={require('../../assets/doris.png')}
-    style={{ width: 40, height: 40, marginRight: 4 }}
-    resizeMode="contain"
-  />
-);
+import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fonts } from '../../lib/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#3A3830',
-        tabBarInactiveTintColor: '#A8A09A',
+        tabBarActiveTintColor: colors.accentPrimary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#FAF7F2',
+          backgroundColor: colors.backgroundPrimary,
           borderTopWidth: 1,
-          borderTopColor: '#EDE8E0',
+          borderTopColor: colors.backgroundSecondary,
         },
-        headerStyle: { backgroundColor: '#F5F0E8' },
-        headerTintColor: '#1C1A16',
-        headerTitleStyle: { fontWeight: '700', color: '#1C1A16' },
+        tabBarLabelStyle: {
+          fontFamily: fonts.uiSans,
+          fontSize: 10,
+        },
+        headerStyle: { backgroundColor: colors.backgroundSecondary },
+        headerTintColor: '#3B2A1A',
+        headerTitleStyle: { fontWeight: '800', fontSize: 20, color: '#3B2A1A', fontFamily: fonts.uiSansMedium },
         headerShadowVisible: false,
-        headerRight: () => <DorisHeader />,
       }}
     >
       <Tabs.Screen
@@ -32,8 +29,8 @@ export default function TabLayout() {
         options={{
           title: 'Estate Helper',
           tabBarLabel: 'Search',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 22 }}>🔍</Text>
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search" size={size} color={color} />
           ),
         }}
       />

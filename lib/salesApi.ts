@@ -14,10 +14,15 @@ function getDateBounds(range: DateRange): { startDate: string; endDate: string }
       d.setDate(d.getDate() + 1);
       return { startDate: fmt(today), endDate: fmt(d) };
     }
-    case 'next3days': {
-      const d = new Date(today);
-      d.setDate(d.getDate() + 2);
-      return { startDate: fmt(today), endDate: fmt(d) };
+    case 'thisweekend': {
+      // Find next Saturday and Sunday
+      const day = today.getDay();
+      const satOffset = day === 0 ? 6 : 6 - day;
+      const sat = new Date(today);
+      sat.setDate(sat.getDate() + satOffset);
+      const sun = new Date(sat);
+      sun.setDate(sun.getDate() + 1);
+      return { startDate: fmt(sat), endDate: fmt(sun) };
     }
     case 'thisweek': {
       const d = new Date(today);
@@ -49,6 +54,7 @@ interface SearchRow {
   start_date: string;
   end_date: string;
   description: string;
+  terms: string | null;
   url: string | null;
   distance_miles: number;
   match_percent: number;
@@ -104,6 +110,7 @@ export async function searchSales(params: {
     startDate: row.start_date,
     endDate: row.end_date,
     description: row.description,
+    terms: row.terms ?? undefined,
     url: row.url ?? undefined,
     images: row.header_image_url
       ? [{ id: `${row.id}-img`, imageUrl: row.header_image_url, position: 0 }]
@@ -150,6 +157,7 @@ interface StateSaleRow {
   start_date: string;
   end_date: string;
   description: string;
+  terms: string | null;
   url: string | null;
 }
 
@@ -166,7 +174,7 @@ async function searchByState(params: {
 
   let builder = supabase
     .from('sales')
-    .select('id, external_id, title, company_name, address, city, state, zip_code, latitude, longitude, start_date, end_date, description, url')
+    .select('id, external_id, title, company_name, address, city, state, zip_code, latitude, longitude, start_date, end_date, description, terms, url')
     .eq('state', abbrev)
     .lte('start_date', endDate)
     .gte('end_date', startDate)
@@ -215,6 +223,7 @@ async function searchByState(params: {
       startDate: row.start_date,
       endDate: row.end_date,
       description: row.description,
+      terms: row.terms ?? undefined,
       url: row.url ?? undefined,
       images: headerImg
         ? [{ id: `${row.id}-img`, imageUrl: headerImg, position: 0 }]
@@ -267,6 +276,7 @@ export async function getSaleById(id: string): Promise<Sale | null> {
     startDate: sale.start_date,
     endDate: sale.end_date,
     description: sale.description,
+    terms: sale.terms ?? undefined,
     url: sale.url ?? undefined,
     images: (images as ImageRow[] ?? []).map((img) => ({
       id: img.id,

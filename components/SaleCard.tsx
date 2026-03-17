@@ -8,6 +8,8 @@ import {
 import { Image } from 'expo-image';
 import { SearchResult } from '../types';
 import { formatDateRange, getSaleStatus, SaleStatus } from '../lib/dates';
+import { detectPaymentTypes } from '../lib/paymentTypes';
+import { colors, fonts, fontSize, spacing, radii, shadows } from '../lib/theme';
 
 interface SaleCardProps {
   sale: SearchResult;
@@ -25,21 +27,22 @@ const STATUS_LABELS: Record<SaleStatus, string> = {
 };
 
 const STATUS_BADGE_COLORS: Record<SaleStatus, string> = {
-  active: '#E6EDE7',
-  upcoming: '#E3E8F0',
-  ending: '#F0E8DC',
-  ended: '#ECEAE7',
+  active: colors.statusActiveBg,
+  upcoming: colors.statusUpcomingBg,
+  ending: colors.statusEndingBg,
+  ended: colors.statusEndedBg,
 };
 
 const STATUS_TEXT_COLORS: Record<SaleStatus, string> = {
-  active: '#3D6B42',
-  upcoming: '#394E6E',
-  ending: '#8B5E30',
-  ended: '#857E78',
+  active: colors.statusActiveText,
+  upcoming: colors.statusUpcomingText,
+  ending: colors.statusEndingText,
+  ended: colors.statusEndedText,
 };
 
 export function SaleCard({ sale, isSaved, hasQuery, onPress, onToggleSave }: SaleCardProps) {
   const status = getSaleStatus(sale.startDate, sale.endDate);
+  const payments = detectPaymentTypes(sale.terms, sale.description);
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
@@ -84,6 +87,16 @@ export function SaleCard({ sale, isSaved, hasQuery, onPress, onToggleSave }: Sal
           {sale.description}
         </Text>
 
+        {payments.length > 0 && (
+          <View style={styles.paymentRow}>
+            {payments.map((p) => (
+              <View key={p.type} style={[styles.paymentBadge, { backgroundColor: p.bgColor }]}>
+                <Text style={[styles.paymentText, { color: p.textColor }]}>{p.label}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.footer}>
           <View style={styles.footerLeft}>
             <Text style={styles.distance}>{sale.distanceMiles} mi</Text>
@@ -104,48 +117,46 @@ export function SaleCard({ sale, isSaved, hasQuery, onPress, onToggleSave }: Sal
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFDF9',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: colors.cardBackground,
+    borderRadius: radii.card,
+    marginHorizontal: spacing.base,
+    marginVertical: spacing.sm,
     overflow: 'hidden',
+    ...shadows.card,
   },
   headerImage: {
     width: '100%',
     height: 180,
   },
   noImage: {
-    backgroundColor: '#EDE8E0',
+    backgroundColor: colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   noImageText: {
-    color: '#999',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: fontSize.body,
+    fontFamily: fonts.uiSans,
   },
   matchBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: '#3A3830',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    top: spacing.md,
+    left: spacing.md,
+    backgroundColor: colors.accentSecondary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.chip,
   },
   matchText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: fontSize.uiMicro,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
   },
   saveButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: spacing.sm,
+    right: spacing.sm,
     backgroundColor: 'rgba(255,255,255,0.9)',
     width: 36,
     height: 36,
@@ -155,30 +166,49 @@ const styles = StyleSheet.create({
   },
   saveIcon: {
     fontSize: 22,
-    color: '#ccc',
+    color: colors.textSecondary,
   },
   saveIconActive: {
-    color: '#C49A6C',
+    color: colors.accentPrimary,
   },
   content: {
-    padding: 14,
+    padding: spacing.listItemVertical,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1C1A16',
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   company: {
-    fontSize: 14,
-    color: '#7A7269',
-    marginBottom: 6,
+    fontSize: fontSize.uiButton,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
+    marginBottom: spacing.sm,
   },
   description: {
-    fontSize: 14,
-    color: '#5A5550',
+    fontSize: fontSize.uiButton,
+    fontFamily: fonts.bodySerif,
+    color: colors.textSecondary,
     lineHeight: 20,
-    marginBottom: 10,
+    marginBottom: spacing.md,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: spacing.md,
+  },
+  paymentBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.small,
+  },
+  paymentText: {
+    fontSize: fontSize.uiMicro,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
@@ -188,24 +218,27 @@ const styles = StyleSheet.create({
   footerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   distance: {
-    fontSize: 13,
-    color: '#3A3830',
-    fontWeight: '600',
+    fontSize: fontSize.uiCaption,
+    color: colors.textPrimary,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
   },
   statusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: radii.small,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.uiMicro,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
   },
   dates: {
-    fontSize: 13,
-    color: '#A8A09A',
+    fontSize: fontSize.uiCaption,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
   },
 });

@@ -18,6 +18,9 @@ import { useSavedSales } from '../../hooks/useSavedSales';
 import { getSaleById } from '../../lib/salesApi';
 import { Sale } from '../../types';
 import { formatDate } from '../../lib/dates';
+import { Ionicons } from '@expo/vector-icons';
+import { detectPaymentTypes } from '../../lib/paymentTypes';
+import { colors, fonts, fontSize, spacing, radii, shadows } from '../../lib/theme';
 
 export default function SaleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,7 +41,7 @@ export default function SaleDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3A3830" />
+        <ActivityIndicator size="large" color={colors.accentPrimary} />
       </View>
     );
   }
@@ -90,18 +93,33 @@ export default function SaleDetailScreen() {
           {/* Date and Location */}
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoIcon}>📅</Text>
+              <Text style={styles.infoLabel}>Date:</Text>
               <Text style={styles.infoText}>
                 {formatDate(sale.startDate, true)} – {formatDate(sale.endDate, true)}
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoIcon}>📍</Text>
+              <Text style={styles.infoLabel}>Address:</Text>
               <Text style={styles.infoText}>
                 {sale.address}, {sale.city}, {sale.state} {sale.zipCode}
               </Text>
             </View>
           </View>
+
+          {/* Payment Types */}
+          {(() => {
+            const payments = detectPaymentTypes(sale.terms, sale.description);
+            if (payments.length === 0) return null;
+            return (
+              <View style={styles.paymentRow}>
+                {payments.map((p) => (
+                  <View key={p.type} style={[styles.paymentBadge, { backgroundColor: p.bgColor }]}>
+                    <Text style={[styles.paymentText, { color: p.textColor }]}>{p.label}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
 
           {/* Action Buttons */}
           <View style={styles.actions}>
@@ -156,7 +174,7 @@ export default function SaleDetailScreen() {
       {/* Footer Tab Bar */}
       <View style={[styles.tabBar, { paddingBottom: insets.bottom || 10 }]}>
         <Pressable style={styles.tabItem} onPress={() => router.navigate('/')}>
-          <Text style={styles.tabIcon}>🔍</Text>
+          <Ionicons name="search" size={22} color={colors.textSecondary} />
           <Text style={styles.tabLabel}>Search</Text>
         </Pressable>
         <Pressable style={styles.tabItem} onPress={() => router.navigate('/saved')}>
@@ -171,7 +189,7 @@ export default function SaleDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFDF9',
+    backgroundColor: colors.backgroundPrimary,
   },
   scrollContent: {
     flex: 1,
@@ -180,123 +198,151 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.backgroundPrimary,
   },
   errorText: {
-    fontSize: 16,
-    color: '#A8A09A',
+    fontSize: fontSize.body,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
   },
   content: {
-    padding: 20,
+    padding: spacing.lg,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1C1A16',
+    fontSize: fontSize.displaySmall,
+    fontFamily: fonts.display,
+    color: colors.textPrimary,
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   saveBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: spacing.listItemVertical,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.chip,
     borderWidth: 1,
-    borderColor: '#C49A6C',
+    borderColor: colors.accentPrimary,
   },
   saveBtnActive: {
-    backgroundColor: '#F5EDDF',
+    backgroundColor: colors.backgroundSecondary,
   },
   saveBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#C49A6C',
+    fontSize: fontSize.uiButton,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.accentPrimary,
   },
   company: {
-    fontSize: 15,
-    color: '#7A7269',
-    marginBottom: 16,
+    fontSize: fontSize.bodySmall,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
+    marginBottom: spacing.base,
   },
   infoSection: {
-    backgroundColor: '#F5F0E8',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    gap: 10,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: radii.card,
+    padding: spacing.listItemVertical,
+    marginBottom: spacing.base,
+    gap: spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
   },
-  infoIcon: {
-    fontSize: 18,
+  infoLabel: {
+    fontSize: fontSize.bodySmall,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.textPrimary,
   },
   infoText: {
-    fontSize: 15,
-    color: '#3A3830',
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+    fontFamily: fonts.uiSans,
     flex: 1,
+    textAlign: 'right',
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: spacing.base,
+  },
+  paymentBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.small,
+  },
+  paymentText: {
+    fontSize: fontSize.uiLabel,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
   },
   actions: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   actionBtn: {
     flex: 1,
-    backgroundColor: '#3A3830',
-    paddingVertical: 12,
-    borderRadius: 10,
+    backgroundColor: colors.accentPrimary,
+    height: 52,
+    borderRadius: radii.button,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   actionBtnSecondary: {
-    backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: '#3A3830',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.accentSecondary,
   },
   actionBtnText: {
-    color: '#FAF7F2',
-    fontWeight: '700',
-    fontSize: 14,
+    color: colors.white,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    fontSize: fontSize.uiButton,
   },
   actionBtnTextSecondary: {
-    color: '#3A3830',
+    color: colors.accentSecondary,
   },
   descriptionSection: {
-    marginBottom: 30,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1C1A16',
-    marginBottom: 10,
+    fontSize: fontSize.displaySmall,
+    fontFamily: fonts.display,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
   description: {
-    fontSize: 15,
-    color: '#5A5550',
-    lineHeight: 24,
+    fontSize: fontSize.body,
+    fontFamily: fonts.bodySerif,
+    color: colors.textSecondary,
+    lineHeight: 26,
   },
   mapSection: {
-    marginBottom: 30,
+    marginBottom: spacing.xxl,
   },
   imagesSection: {
-    marginBottom: 30,
+    marginBottom: spacing.xxl,
   },
   imageGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: spacing.sm,
   },
   imageGridItem: {
-    width: (Dimensions.get('window').width - 40 - 6) / 2,
+    width: (Dimensions.get('window').width - 40 - 8) / 2,
     aspectRatio: 1,
-    borderRadius: 10,
+    borderRadius: radii.button,
     overflow: 'hidden',
-    backgroundColor: '#EDE8E0',
+    backgroundColor: colors.backgroundSecondary,
   },
   gridImage: {
     width: '100%',
@@ -304,25 +350,25 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FAF7F2',
+    backgroundColor: colors.backgroundPrimary,
     borderTopWidth: 1,
-    borderTopColor: '#EDE8E0',
-    paddingTop: 8,
+    borderTopColor: colors.backgroundSecondary,
+    paddingTop: spacing.sm,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   tabIcon: {
     fontSize: 22,
-    color: '#A8A09A',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   tabLabel: {
-    fontSize: 10,
-    color: '#A8A09A',
-    fontWeight: '600',
+    fontSize: fontSize.tabLabel,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
   },
 });

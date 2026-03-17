@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
+import { colors, radii } from '../lib/theme';
 
 // Zoom 12 gives a nice "part of town" overview — roughly 10-15 km across
 const ZOOM = 12;
@@ -92,9 +93,9 @@ export function SaleMap({ latitude, longitude }: Props) {
 const styles = StyleSheet.create({
   container: {
     height: 240,
-    borderRadius: 12,
+    borderRadius: radii.card,
     overflow: 'hidden',
-    backgroundColor: '#E8E4DD',
+    backgroundColor: colors.backgroundSecondary,
   },
   tileGrid: {
     ...StyleSheet.absoluteFillObject,
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   },
   star: {
     fontSize: 28,
-    color: '#C49A6C',
+    color: colors.accentPrimary,
     textShadowColor: '#fff',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,

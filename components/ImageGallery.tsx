@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SaleImage } from '../types';
+import { colors, fonts, fontSize, spacing } from '../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -74,35 +75,37 @@ const styles = StyleSheet.create({
     height: 280,
   },
   noImage: {
-    backgroundColor: '#EDE8E0',
+    backgroundColor: colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   noImageText: {
-    color: '#A8A09A',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: fontSize.body,
+    fontFamily: fonts.uiSans,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 6,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#DDD8CE',
+    backgroundColor: colors.backgroundSecondary,
   },
   dotActive: {
-    backgroundColor: '#3A3830',
+    backgroundColor: colors.accentPrimary,
     width: 20,
   },
   caption: {
     textAlign: 'center',
-    fontSize: 13,
-    color: '#7A7269',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    fontSize: fontSize.uiCaption,
+    color: colors.textSecondary,
+    fontFamily: fonts.bodySerif,
+    paddingHorizontal: spacing.base,
+    marginBottom: spacing.sm,
   },
 });

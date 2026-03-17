@@ -12,6 +12,7 @@ export interface Sale {
   startDate: string; // ISO date string
   endDate: string;
   description: string;
+  terms?: string;
   url?: string;
   images: SaleImage[];
 }
@@ -32,7 +33,7 @@ export interface SearchQuery {
   dateRange: DateRange;
 }
 
-export type DateRange = 'today' | 'tomorrow' | 'next3days' | 'thisweek' | 'all';
+export type DateRange = 'today' | 'tomorrow' | 'thisweekend' | 'thisweek' | 'all';
 
 export interface SearchResult extends Sale {
   distanceMiles: number;

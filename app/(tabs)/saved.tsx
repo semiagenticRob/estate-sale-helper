@@ -8,6 +8,7 @@ import { useSavedSales } from '../../hooks/useSavedSales';
 import { getSaleById } from '../../lib/salesApi';
 import { Sale } from '../../types';
 import { getSaleStatus, formatDate } from '../../lib/dates';
+import { colors, fonts, fontSize, spacing, radii, shadows } from '../../lib/theme';
 
 export default function SavedScreen() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function SavedScreen() {
     navigation.setOptions({
       headerLeft: () => (
         <HeaderBackButton
-          tintColor="#1C1A16"
+          tintColor={colors.textPrimary}
           onPress={() => {
             const last = getLastSearch();
             if (last) {
@@ -62,7 +63,7 @@ export default function SavedScreen() {
   if (loading && savedSales.length > 0) {
     return (
       <View style={styles.empty}>
-        <ActivityIndicator size="large" color="#3A3830" />
+        <ActivityIndicator size="large" color={colors.accentPrimary} />
       </View>
     );
   }
@@ -148,47 +149,44 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0EAE2',
+    backgroundColor: colors.backgroundPrimary,
   },
   list: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#FAF7F2',
+    backgroundColor: colors.backgroundPrimary,
   },
   emptyIcon: {
     fontSize: 48,
-    color: '#DDD8CE',
-    marginBottom: 16,
+    color: colors.separator,
+    marginBottom: spacing.base,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1A16',
-    marginBottom: 8,
+    fontFamily: fonts.bodySerif,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   emptyHint: {
-    fontSize: 14,
-    color: '#A8A09A',
+    fontSize: fontSize.uiButton,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
     textAlign: 'center',
     lineHeight: 20,
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#FFFDF9',
-    marginHorizontal: 16,
-    marginVertical: 6,
-    borderRadius: 12,
+    backgroundColor: colors.cardBackground,
+    marginHorizontal: spacing.base,
+    marginVertical: spacing.sm,
+    borderRadius: radii.card,
     overflow: 'hidden',
-    shadowColor: '#3A3830',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadows.card,
   },
   thumbnail: {
     width: 80,
@@ -196,24 +194,26 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    padding: 12,
+    padding: spacing.md,
     justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1C1A16',
+    fontSize: fontSize.bodySmall,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   cardLocation: {
-    fontSize: 13,
-    color: '#7A7269',
-    marginBottom: 6,
+    fontSize: fontSize.uiCaption,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
+    marginBottom: spacing.sm,
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm,
   },
   statusDot: {
     width: 8,
@@ -221,24 +221,25 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusActive: {
-    backgroundColor: '#5A8A60',
+    backgroundColor: colors.statusActive,
   },
   statusUpcoming: {
-    backgroundColor: '#5070A0',
+    backgroundColor: colors.statusUpcoming,
   },
   statusEnded: {
-    backgroundColor: '#A8A09A',
+    backgroundColor: colors.statusEnded,
   },
   statusLabel: {
-    fontSize: 12,
-    color: '#7A7269',
+    fontSize: fontSize.uiLabel,
+    color: colors.textSecondary,
+    fontFamily: fonts.uiSans,
   },
   removeBtn: {
     justifyContent: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.listItemVertical,
   },
   removeIcon: {
     fontSize: 24,
-    color: '#C49A6C',
+    color: colors.accentPrimary,
   },
 });
