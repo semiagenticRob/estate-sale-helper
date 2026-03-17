@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySmall,
     color: colors.textPrimary,
     fontFamily: fonts.uiSans,
-    paddingLeft: 0,
+    textAlign: 'right',
   },
   infoLabel: {
     fontSize: fontSize.bodySmall,
