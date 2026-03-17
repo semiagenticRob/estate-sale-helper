@@ -70,7 +70,7 @@ export default function SaleDetailScreen() {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContent}>
-        <ImageGallery images={sale.images} />
+        <ImageGallery images={sale.images.slice(0, 8)} />
 
         <View style={styles.content}>
           {/* Title and Save */}
