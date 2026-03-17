@@ -107,15 +107,11 @@ BEGIN
     s.url,
     s.terms,
     s.sale_hours,
-    CASE
-      WHEN s.latitude IS NOT NULL AND s.longitude IS NOT NULL
-      THEN (3959 * acos(
-        LEAST(1.0, cos(radians(user_lat)) * cos(radians(s.latitude)) *
-        cos(radians(s.longitude) - radians(user_lng)) +
-        sin(radians(user_lat)) * sin(radians(s.latitude)))
-      ))
-      ELSE NULL
-    END AS distance_miles,
+    (3959 * acos(
+      LEAST(1.0, cos(radians(user_lat)) * cos(radians(s.latitude)) *
+      cos(radians(s.longitude) - radians(user_lng)) +
+      sin(radians(user_lat)) * sin(radians(s.latitude)))
+    )) AS distance_miles,
     CASE
       WHEN query = '' THEN 0
       ELSE LEAST(100, (ts_rank_cd(
@@ -128,18 +124,13 @@ BEGIN
   WHERE
     s.start_date <= date_end
     AND s.end_date >= date_start
-    AND (
-      -- Include sales with coords within radius
-      (s.latitude IS NOT NULL AND s.longitude IS NOT NULL
-       AND (3959 * acos(
-         LEAST(1.0, cos(radians(user_lat)) * cos(radians(s.latitude)) *
-         cos(radians(s.longitude) - radians(user_lng)) +
-         sin(radians(user_lat)) * sin(radians(s.latitude)))
-       )) <= radius_miles)
-      OR
-      -- Include sales without coords if they're in a nearby city/state
-      (s.latitude IS NULL OR s.longitude IS NULL)
-    )
+    AND s.latitude IS NOT NULL
+    AND s.longitude IS NOT NULL
+    AND (3959 * acos(
+      LEAST(1.0, cos(radians(user_lat)) * cos(radians(s.latitude)) *
+      cos(radians(s.longitude) - radians(user_lng)) +
+      sin(radians(user_lat)) * sin(radians(s.latitude)))
+    )) <= radius_miles
     AND (
       query = '' OR
       to_tsvector('english', COALESCE(s.title, '') || ' ' || COALESCE(s.description, ''))
@@ -147,6 +138,6 @@ BEGIN
     )
   ORDER BY
     CASE WHEN query = '' THEN 0 ELSE -match_percent END,
-    distance_miles ASC NULLS LAST;
+    distance_miles ASC;
 END;
 $$ LANGUAGE plpgsql;
