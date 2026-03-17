@@ -139,24 +139,62 @@ def extract_sale_hours(soup: BeautifulSoup) -> Optional[str]:
     return '\n'.join(lines) if lines else None
 
 
+UI_ARTIFACTS_RE = re.compile(
+    r'(?:View\s*More|View\s*Less|'
+    r'arrow_drop_down(?:_filled)?_ms|arrow_drop_up(?:_filled)?_ms|'
+    r'verified_user_outlined|article_ms|'
+    r'expand_more|expand_less)',
+    re.I,
+)
+
+
 def extract_terms(soup: BeautifulSoup) -> Optional[str]:
     """Extract Terms & Conditions text from the page HTML.
 
-    The terms live inside a Material expansion panel whose header contains
-    the text 'Terms' (e.g. 'Terms & Conditions'). We grab all the text
-    from the panel body.
+    The full terms text lives inside the NGRX state JSON blob that Angular
+    embeds in a bare <script> tag, under the path:
+        NGRX_STATE -> "feature.traditionalSaleViewState" -> entitiesById -> <sale_id> -> terms
+
+    We try that first.  If the JSON approach fails we fall back to scraping
+    the mat-expansion-panel DOM element directly.
     """
-    # Look for any element whose text contains 'Terms' that acts as a panel header
+    # --- Strategy 1: Pull from NGRX state JSON (has the full, un-truncated text) ---
+    for script in soup.find_all('script'):
+        # Skip scripts with a src attribute or a type that isn't plain JS / absent
+        if script.get('src'):
+            continue
+        content = script.string or ''
+        if '"NGRX_STATE"' not in content:
+            continue
+        try:
+            state = json.loads(content)
+            sale_view = state.get('NGRX_STATE', {}).get('feature.traditionalSaleViewState', {})
+            entities = sale_view.get('entitiesById', {})
+            for sale_id, sale_data in entities.items():
+                terms = sale_data.get('terms')
+                if terms and isinstance(terms, str):
+                    return _clean_terms(terms)
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            continue
+
+    # --- Strategy 2: Fall back to DOM scraping (may be truncated) ---
     for header in soup.find_all(string=re.compile(r'Terms\s*[&and]*\s*Conditions', re.I)):
-        # Walk up to the expansion panel container
         panel = header.find_parent('mat-expansion-panel') or header.find_parent('div')
         if panel:
             text = panel.get_text(separator=' ', strip=True)
-            # Remove the header text itself and clean up
             text = re.sub(r'Terms\s*[&and]*\s*Conditions\s*', '', text, count=1, flags=re.I).strip()
             if text:
-                return text
+                return _clean_terms(text)
     return None
+
+
+def _clean_terms(text: str) -> str:
+    """Strip UI artifacts (icon ligature names, View More buttons, etc.) from terms text."""
+    text = UI_ARTIFACTS_RE.sub('', text)
+    # Collapse runs of whitespace (but keep intentional newlines as single newlines)
+    text = re.sub(r'[^\S\n]+', ' ', text)       # horizontal whitespace -> single space
+    text = re.sub(r'\n{3,}', '\n\n', text)       # 3+ newlines -> 2
+    return text.strip()
 
 
 def scrape_sale(url: str) -> Optional[dict]:
