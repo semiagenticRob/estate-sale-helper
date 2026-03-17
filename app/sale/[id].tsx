@@ -112,22 +112,23 @@ export default function SaleDetailScreen() {
                 {sale.address ? `${sale.address}, ${sale.city}, ${sale.state} ${sale.zipCode}` : `${sale.city}, ${sale.state} ${sale.zipCode}`}
               </Text>
             </View>
-          </View>
-
-          {/* Payment Types */}
-          {(() => {
-            const payments = detectPaymentTypes(sale.terms, sale.description);
-            if (payments.length === 0) return null;
-            return (
-              <View style={styles.paymentRow}>
-                {payments.map((p) => (
-                  <View key={p.type} style={[styles.paymentBadge, { backgroundColor: p.bgColor }]}>
-                    <Text style={[styles.paymentText, { color: p.textColor }]}>{p.label}</Text>
+            {(() => {
+              const payments = detectPaymentTypes(sale.terms, sale.description);
+              if (payments.length === 0) return null;
+              return (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Payment:</Text>
+                  <View style={styles.paymentTags}>
+                    {payments.map((p) => (
+                      <View key={p.type} style={[styles.paymentBadge, { backgroundColor: p.bgColor }]}>
+                        <Text style={[styles.paymentText, { color: p.textColor }]}>{p.label}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            );
-          })()}
+                </View>
+              );
+            })()}
+          </View>
 
           {/* Action Buttons */}
           <View style={styles.actions}>
@@ -285,11 +286,12 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  paymentRow: {
+  paymentTags: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: spacing.base,
+    justifyContent: 'flex-end',
+    gap: 6,
   },
   paymentBadge: {
     paddingHorizontal: 10,
