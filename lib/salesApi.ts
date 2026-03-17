@@ -53,8 +53,9 @@ interface SearchRow {
   end_date: string;
   description: string;
   terms: string | null;
+  sale_hours: string | null;
   url: string | null;
-  distance_miles: number;
+  distance_miles: number | null;
   match_percent: number;
   header_image_url: string | null;
 }
@@ -109,11 +110,12 @@ export async function searchSales(params: {
     endDate: row.end_date,
     description: row.description,
     terms: row.terms ?? undefined,
+    saleHours: row.sale_hours ?? undefined,
     url: row.url ?? undefined,
     images: row.header_image_url
       ? [{ id: `${row.id}-img`, imageUrl: row.header_image_url, position: 0 }]
       : [],
-    distanceMiles: Math.round(row.distance_miles * 10) / 10,
+    distanceMiles: row.distance_miles != null ? Math.round(row.distance_miles * 10) / 10 : 0,
     matchPercent: row.match_percent,
     headerImageUrl: row.header_image_url ?? undefined,
   }));
@@ -156,6 +158,7 @@ interface StateSaleRow {
   end_date: string;
   description: string;
   terms: string | null;
+  sale_hours: string | null;
   url: string | null;
 }
 
@@ -172,7 +175,7 @@ async function searchByState(params: {
 
   let builder = supabase
     .from('sales')
-    .select('id, external_id, title, company_name, address, city, state, zip_code, latitude, longitude, start_date, end_date, description, terms, url')
+    .select('id, external_id, title, company_name, address, city, state, zip_code, latitude, longitude, start_date, end_date, description, terms, sale_hours, url')
     .eq('state', abbrev)
     .lte('start_date', endDate)
     .gte('end_date', startDate)
@@ -222,6 +225,7 @@ async function searchByState(params: {
       endDate: row.end_date,
       description: row.description,
       terms: row.terms ?? undefined,
+      saleHours: row.sale_hours ?? undefined,
       url: row.url ?? undefined,
       images: headerImg
         ? [{ id: `${row.id}-img`, imageUrl: headerImg, position: 0 }]
@@ -275,6 +279,7 @@ export async function getSaleById(id: string): Promise<Sale | null> {
     endDate: sale.end_date,
     description: sale.description,
     terms: sale.terms ?? undefined,
+    saleHours: sale.sale_hours ?? undefined,
     url: sale.url ?? undefined,
     images: (images as ImageRow[] ?? []).map((img) => ({
       id: img.id,

@@ -13,6 +13,7 @@ export interface Sale {
   endDate: string;
   description: string;
   terms?: string;
+  saleHours?: string;
   url?: string;
   images: SaleImage[];
 }

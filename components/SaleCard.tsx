@@ -21,6 +21,7 @@ interface SaleCardProps {
 
 const STATUS_LABELS: Record<SaleStatus, string> = {
   active: 'Happening Now',
+  startingsoon: 'Starting Soon',
   upcoming: 'Upcoming',
   ending: 'Last Day',
   ended: 'Ended',
@@ -28,6 +29,7 @@ const STATUS_LABELS: Record<SaleStatus, string> = {
 
 const STATUS_BADGE_COLORS: Record<SaleStatus, string> = {
   active: colors.statusActiveBg,
+  startingsoon: colors.statusEndingBg,
   upcoming: colors.statusUpcomingBg,
   ending: colors.statusEndingBg,
   ended: colors.statusEndedBg,
@@ -35,13 +37,14 @@ const STATUS_BADGE_COLORS: Record<SaleStatus, string> = {
 
 const STATUS_TEXT_COLORS: Record<SaleStatus, string> = {
   active: colors.statusActiveText,
+  startingsoon: colors.statusEndingText,
   upcoming: colors.statusUpcomingText,
   ending: colors.statusEndingText,
   ended: colors.statusEndedText,
 };
 
 export function SaleCard({ sale, isSaved, hasQuery, onPress, onToggleSave }: SaleCardProps) {
-  const status = getSaleStatus(sale.startDate, sale.endDate);
+  const status = getSaleStatus(sale.startDate, sale.endDate, sale.saleHours);
   const payments = detectPaymentTypes(sale.terms, sale.description);
 
   return (

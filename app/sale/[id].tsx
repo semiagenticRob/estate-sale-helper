@@ -90,7 +90,7 @@ export default function SaleDetailScreen() {
             <Text style={styles.company}>by {sale.companyName}</Text>
           )}
 
-          {/* Date and Location */}
+          {/* Date, Time, and Location */}
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Date:</Text>
@@ -98,10 +98,18 @@ export default function SaleDetailScreen() {
                 {formatDate(sale.startDate, true)} – {formatDate(sale.endDate, true)}
               </Text>
             </View>
+            {sale.saleHours ? (
+              <View style={styles.hoursBlock}>
+                <Text style={styles.infoLabel}>Hours:</Text>
+                {sale.saleHours.split('\n').map((line, i) => (
+                  <Text key={i} style={styles.hoursLine}>{line}</Text>
+                ))}
+              </View>
+            ) : null}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Address:</Text>
               <Text style={styles.infoText}>
-                {sale.address}, {sale.city}, {sale.state} {sale.zipCode}
+                {sale.address ? `${sale.address}, ${sale.city}, ${sale.state} ${sale.zipCode}` : `${sale.city}, ${sale.state} ${sale.zipCode}`}
               </Text>
             </View>
           </View>
@@ -254,6 +262,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+  },
+  hoursBlock: {
+    gap: 4,
+  },
+  hoursLine: {
+    fontSize: fontSize.bodySmall,
+    color: colors.textPrimary,
+    fontFamily: fonts.uiSans,
+    paddingLeft: 0,
   },
   infoLabel: {
     fontSize: fontSize.bodySmall,
