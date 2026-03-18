@@ -489,9 +489,9 @@ def run(grid_points: list[tuple[float, float]] = COLORADO_POINTS):
                 print(f'    No API data for id {ext_id}, skipping')
                 continue
 
-            # Skip online-only auctions — no physical location to visit
-            sale_type = (api_data.get('type') or '').lower()
-            if api_data.get('isMarketplaceSale') or 'online' in sale_type:
+            # Skip online-only auctions — no physical location to visit.
+            # type is a numeric bitmask; isMarketplaceSale is the reliable flag.
+            if api_data.get('isMarketplaceSale'):
                 print(f'    — Skipping online-only sale {ext_id}')
                 continue
 
