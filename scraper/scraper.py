@@ -109,6 +109,13 @@ GRID_POINTS: list[tuple[float, float]] = [
     (21.31, -157.86),   # Honolulu
 ]
 
+# Single point covers all of Colorado (250-mile radius from Denver reaches
+# every corner of the state). Swap run()'s default to GRID_POINTS for
+# a full national run.
+COLORADO_POINTS: list[tuple[float, float]] = [
+    (39.74, -104.99),   # Denver — covers all of CO
+]
+
 
 # ─── API: Discovery ──────────────────────────────────────────────────────────
 
@@ -451,7 +458,7 @@ def needs_detail_scrape(existing: Optional[dict], current_hash: str) -> bool:
 
 # ─── Runner ──────────────────────────────────────────────────────────────────
 
-def run(grid_points: list[tuple[float, float]] = GRID_POINTS):
+def run(grid_points: list[tuple[float, float]] = COLORADO_POINTS):
     seen_ids:        set[str] = set()
     total_discovered = 0
     total_upserted   = 0
