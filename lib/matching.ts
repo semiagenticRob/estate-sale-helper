@@ -1,5 +1,6 @@
 import { Sale, SearchResult, DateRange } from '../types';
 import { getDistanceMiles } from './location';
+import { getDateBounds } from './dates';
 
 // Client-side text matching for MVP (Phase 1)
 // In Phase 2, this will be replaced by Supabase's Postgres full-text search
@@ -89,38 +90,3 @@ function calculateMatchPercent(sale: Sale, queryTerms: string[]): number {
   return Math.round((termCoverage + occurrenceBonus) * 100);
 }
 
-function getDateBounds(
-  range: DateRange,
-  now: Date
-): { startDate: Date; endDate: Date } {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  switch (range) {
-    case 'today':
-      return { startDate: today, endDate: today };
-    case 'tomorrow': {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return { startDate: today, endDate: tomorrow };
-    }
-    case 'thisweekend': {
-      const day = today.getDay();
-      const satOffset = day === 0 ? 6 : 6 - day;
-      const sat = new Date(today);
-      sat.setDate(sat.getDate() + satOffset);
-      const sun = new Date(sat);
-      sun.setDate(sun.getDate() + 1);
-      return { startDate: sat, endDate: sun };
-    }
-    case 'thisweek': {
-      const end = new Date(today);
-      end.setDate(end.getDate() + 6);
-      return { startDate: today, endDate: end };
-    }
-    case 'all': {
-      const future = new Date(today);
-      future.setFullYear(future.getFullYear() + 1);
-      return { startDate: today, endDate: future };
-    }
-  }
-}

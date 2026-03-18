@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SaleCard } from '../../components/SaleCard';
+import { ResultsMap } from '../../components/ResultsMap';
 import { useSavedSales } from '../../hooks/useSavedSales';
 import { searchSales } from '../../lib/salesApi';
 import { DateRange, SearchResult } from '../../types';
-import { colors, fonts, fontSize, spacing } from '../../lib/theme';
+import { colors, fonts, fontSize, spacing, radii } from '../../lib/theme';
 
 const DATE_RANGE_LABELS: Record<DateRange, string> = {
   today: 'Today',
@@ -30,6 +32,7 @@ export default function ResultsScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   const hasQuery = Boolean(params.query?.trim());
   const radius = parseInt(params.radius || '25', 10);
@@ -65,12 +68,29 @@ export default function ResultsScreen() {
     <View style={styles.container}>
       {/* Results header */}
       <View style={styles.header}>
-        <Text style={styles.headerCount}>
-          {loading ? 'Searching…' : `${results.length} sale${results.length !== 1 ? 's' : ''}${hasQuery ? ` for "${params.query}"` : ''}`}
-        </Text>
-        <Text style={styles.headerMeta}>
-          {params.statewide ? `All sales in ${params.statewide}` : `Within ${radius} mi`} · {DATE_RANGE_LABELS[dateRange]}
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={styles.headerCount}>
+              {loading ? 'Searching…' : `${results.length} sale${results.length !== 1 ? 's' : ''}${hasQuery ? ` for "${params.query}"` : ''}`}
+            </Text>
+            <Text style={styles.headerMeta}>
+              {params.statewide ? `All sales in ${params.statewide}` : `Within ${radius} mi`} · {DATE_RANGE_LABELS[dateRange]}
+            </Text>
+          </View>
+          {!loading && results.length > 0 && (
+            <Pressable
+              style={styles.toggleButton}
+              onPress={() => setViewMode((v) => (v === 'list' ? 'map' : 'list'))}
+            >
+              <Ionicons
+                name={viewMode === 'list' ? 'map-outline' : 'list-outline'}
+                size={15}
+                color={colors.accentPrimary}
+              />
+              <Text style={styles.toggleLabel}>{viewMode === 'list' ? 'Map' : 'List'}</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {loading ? (
@@ -90,6 +110,14 @@ export default function ResultsScreen() {
             Try expanding your distance or date range
           </Text>
         </View>
+      ) : viewMode === 'map' ? (
+        <ResultsMap
+          results={results}
+          centerLat={parseFloat(params.latitude || '39.7392')}
+          centerLng={parseFloat(params.longitude || '-104.9903')}
+          radius={radius}
+          onSalePress={(id) => router.push(`/sale/${id}`)}
+        />
       ) : (
         <FlatList
           data={results}
@@ -122,6 +150,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.separator,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerText: {
+    flex: 1,
+  },
   headerCount: {
     fontSize: fontSize.bodySmall,
     fontFamily: fonts.uiSansMedium,
@@ -133,6 +169,23 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: fonts.uiSans,
     marginTop: 2,
+  },
+  toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    backgroundColor: colors.backgroundPrimary,
+    borderRadius: radii.button,
+    borderWidth: 1,
+    borderColor: colors.accentPrimary,
+  },
+  toggleLabel: {
+    fontSize: fontSize.uiCaption,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.accentPrimary,
   },
   list: {
     paddingVertical: spacing.sm,

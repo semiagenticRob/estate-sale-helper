@@ -41,15 +41,14 @@ export default function SavedScreen() {
       let cancelled = false;
       async function fetchSales() {
         setLoading(true);
-        const results: (Sale & { savedAt: string })[] = [];
-        for (const saved of savedSales) {
-          const sale = await getSaleById(saved.saleId);
-          if (sale && !cancelled) {
-            results.push({ ...sale, savedAt: saved.savedAt });
-          }
-        }
+        const fetched = await Promise.all(
+          savedSales.map(async (saved) => {
+            const sale = await getSaleById(saved.saleId);
+            return sale ? { ...sale, savedAt: saved.savedAt } : null;
+          })
+        );
         if (!cancelled) {
-          setSalesData(results);
+          setSalesData(fetched.filter((s): s is Sale & { savedAt: string } => s !== null));
           setLoading(false);
         }
       }

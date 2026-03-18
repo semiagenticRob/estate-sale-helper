@@ -24,6 +24,13 @@ export const colors = {
   placeholder: '#7A756F',
   white: '#F7F4F0',
 
+  // UI chrome
+  textDark: '#3B2A1A',
+  textMuted: '#5C4A38',
+  buttonSelected: '#7A5C3F',
+  borderGold: '#C4A882',
+  backgroundWarm: '#F5EFE8',
+
   // Status
   statusActive: '#5A8A60',
   statusUpcoming: '#5070A0',

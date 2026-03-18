@@ -1,41 +1,11 @@
 import { supabase } from './supabase';
 import { Sale, SearchResult, DateRange } from '../types';
+import { getDistanceMiles } from './location';
+import { getDateBounds } from './dates';
 
-function getDateBounds(range: DateRange): { startDate: string; endDate: string } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const fmt = (d: Date) => d.toISOString().split('T')[0];
-
-  switch (range) {
-    case 'today':
-      return { startDate: fmt(today), endDate: fmt(today) };
-    case 'tomorrow': {
-      const d = new Date(today);
-      d.setDate(d.getDate() + 1);
-      return { startDate: fmt(today), endDate: fmt(d) };
-    }
-    case 'thisweekend': {
-      // Find next Saturday and Sunday
-      const day = today.getDay();
-      const satOffset = day === 0 ? 6 : 6 - day;
-      const sat = new Date(today);
-      sat.setDate(sat.getDate() + satOffset);
-      const sun = new Date(sat);
-      sun.setDate(sun.getDate() + 1);
-      return { startDate: fmt(sat), endDate: fmt(sun) };
-    }
-    case 'thisweek': {
-      const d = new Date(today);
-      d.setDate(d.getDate() + 6);
-      return { startDate: fmt(today), endDate: fmt(d) };
-    }
-    case 'all': {
-      // Today forward — never show ended sales
-      const future = new Date(today);
-      future.setFullYear(future.getFullYear() + 1);
-      return { startDate: fmt(today), endDate: fmt(future) };
-    }
-  }
+/** Format a Date as YYYY-MM-DD string for Supabase queries. */
+function formatDateParam(d: Date): string {
+  return d.toISOString().split('T')[0];
 }
 
 interface SearchRow {
@@ -77,7 +47,9 @@ export async function searchSales(params: {
   stateCode?: string;
 }): Promise<SearchResult[]> {
   const { query, latitude, longitude, radiusMiles, dateRange, stateCode } = params;
-  const { startDate, endDate } = getDateBounds(dateRange);
+  const bounds = getDateBounds(dateRange);
+  const startDate = formatDateParam(bounds.startDate);
+  const endDate = formatDateParam(bounds.endDate);
 
   // Statewide search: query by state column directly so sales without coords are included
   if (stateCode) {
@@ -138,7 +110,7 @@ const STATE_ABBREVS: Record<string, string> = {
   'wisconsin': 'WI', 'wyoming': 'WY',
 };
 
-function toStateAbbrev(stateLabel: string): string {
+export function toStateAbbrev(stateLabel: string): string {
   const lower = stateLabel.trim().toLowerCase();
   return STATE_ABBREVS[lower] || stateLabel.trim().toUpperCase();
 }
@@ -162,6 +134,16 @@ interface StateSaleRow {
   url: string | null;
 }
 
+/**
+ * Sanitize a user-provided string for use inside a PostgREST filter value.
+ * PostgREST uses `.` (column.operator), `,` (filter separator), and `()`
+ * (grouping) as syntax — these must be stripped from user input to prevent
+ * filter injection.
+ */
+export function sanitizeFilterValue(input: string): string {
+  return input.replace(/[,.()"\\]/g, '').trim();
+}
+
 async function searchByState(params: {
   query: string;
   stateCode: string;
@@ -181,8 +163,9 @@ async function searchByState(params: {
     .gte('end_date', startDate)
     .order('start_date');
 
-  if (query.trim()) {
-    builder = builder.or(`title.ilike.%${query.trim()}%,description.ilike.%${query.trim()}%`);
+  const sanitized = sanitizeFilterValue(query);
+  if (sanitized) {
+    builder = builder.or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`);
   }
 
   const { data, error } = await builder;
@@ -206,7 +189,7 @@ async function searchByState(params: {
   return rows.map((row) => {
     const hasCoords = row.latitude != null && row.longitude != null;
     const dist = hasCoords
-      ? haversine(latitude, longitude, row.latitude!, row.longitude!)
+      ? getDistanceMiles(latitude, longitude, row.latitude!, row.longitude!)
       : null;
     const headerImg = imageMap.get(row.id) || null;
 
@@ -235,18 +218,6 @@ async function searchByState(params: {
       headerImageUrl: headerImg ?? undefined,
     };
   });
-}
-
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 3959;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export async function getSaleById(id: string): Promise<Sale | null> {

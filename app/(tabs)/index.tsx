@@ -235,7 +235,7 @@ export default function HomeScreen() {
               <ActivityIndicator size="small" color={colors.accentPrimary} />
             ) : (
               <>
-                <Ionicons name="location-sharp" size={14} color="#7A5C3F" />
+                <Ionicons name="location-sharp" size={14} color={colors.buttonSelected} />
                 <Text style={styles.locationText}>
                   {locationQuery || 'Tap to set location'}
                 </Text>
@@ -266,7 +266,7 @@ const MASCOT_SIZE = 72;
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F5EFE8',
+    backgroundColor: colors.backgroundWarm,
   },
   mascotContainer: {
     position: 'absolute',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: MASCOT_SIZE / 2,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#C4A882',
+    borderColor: colors.borderGold,
     overflow: 'hidden',
     zIndex: 10,
     alignItems: 'center',
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.uiSansMedium,
     fontWeight: '700',
-    color: '#3B2A1A',
+    color: colors.textDark,
     marginBottom: 10,
     letterSpacing: 0.8,
   },
@@ -315,19 +315,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: fonts.uiSansMedium,
     fontWeight: '600',
-    color: '#3B2A1A',
+    color: colors.textDark,
   },
   locationHint: {
     fontSize: 13,
     fontFamily: fonts.uiSans,
-    color: '#7A5C3F',
+    color: colors.buttonSelected,
   },
   locationInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.cardBackground,
     borderWidth: 0.5,
-    borderColor: '#C4A882',
+    borderColor: colors.borderGold,
     borderRadius: radii.small,
     paddingHorizontal: 12,
     height: 44,
@@ -335,13 +335,13 @@ const styles = StyleSheet.create({
   locationInput: {
     flex: 1,
     fontSize: 15,
-    color: '#3B2A1A',
+    color: colors.textDark,
     fontFamily: fonts.uiSans,
   },
   suggestionsContainer: {
     backgroundColor: colors.cardBackground,
     borderWidth: 0.5,
-    borderColor: '#C4A882',
+    borderColor: colors.borderGold,
     borderRadius: radii.small,
     marginTop: spacing.xs,
     overflow: 'hidden',
@@ -352,11 +352,11 @@ const styles = StyleSheet.create({
   },
   suggestionBorder: {
     borderBottomWidth: 0.5,
-    borderBottomColor: '#C4A882',
+    borderBottomColor: colors.borderGold,
   },
   suggestionText: {
     fontSize: 15,
-    color: '#3B2A1A',
+    color: colors.textDark,
     fontFamily: fonts.uiSans,
   },
   locationError: {
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   searchButton: {
-    backgroundColor: '#7A5C3F',
+    backgroundColor: colors.buttonSelected,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',

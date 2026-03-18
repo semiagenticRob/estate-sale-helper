@@ -19,8 +19,8 @@ export default function TabLayout() {
           fontSize: 10,
         },
         headerStyle: { backgroundColor: colors.backgroundSecondary },
-        headerTintColor: '#3B2A1A',
-        headerTitleStyle: { fontWeight: '800', fontSize: 20, color: '#3B2A1A', fontFamily: fonts.uiSansMedium },
+        headerTintColor: colors.textDark,
+        headerTitleStyle: { fontWeight: '800', fontSize: 20, color: colors.textDark, fontFamily: fonts.uiSansMedium },
         headerShadowVisible: false,
       }}
     >

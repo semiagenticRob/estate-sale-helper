@@ -1,3 +1,5 @@
+import { DateRange } from '../types';
+
 /** Parse a 'YYYY-MM-DD' string as a local date (avoids UTC-midnight timezone shift). */
 export function parseLocalDate(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -104,6 +106,46 @@ function parseTodayHours(
   }
 
   return null;
+}
+
+/**
+ * Convert a DateRange value into concrete start/end Date boundaries.
+ * Used by both client-side matching and server-side API queries.
+ */
+export function getDateBounds(
+  range: DateRange,
+  now: Date = new Date()
+): { startDate: Date; endDate: Date } {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (range) {
+    case 'today':
+      return { startDate: today, endDate: today };
+    case 'tomorrow': {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return { startDate: today, endDate: tomorrow };
+    }
+    case 'thisweekend': {
+      const day = today.getDay();
+      const satOffset = day === 0 ? 6 : 6 - day;
+      const sat = new Date(today);
+      sat.setDate(sat.getDate() + satOffset);
+      const sun = new Date(sat);
+      sun.setDate(sun.getDate() + 1);
+      return { startDate: sat, endDate: sun };
+    }
+    case 'thisweek': {
+      const end = new Date(today);
+      end.setDate(end.getDate() + 6);
+      return { startDate: today, endDate: end };
+    }
+    case 'all': {
+      const future = new Date(today);
+      future.setFullYear(future.getFullYear() + 1);
+      return { startDate: today, endDate: future };
+    }
+  }
 }
 
 /** Parse "10am", "9:30 PM", etc. into a Date for today. */
