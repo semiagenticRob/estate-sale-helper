@@ -17,9 +17,18 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Estate Helper uses your location to find nearby estate sales."
       },
-      "bundleIdentifier": "com.anonymous.estate-helper"
+      "bundleIdentifier": "com.estatesalehelper.app",
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
+      }
     },
     "android": {
+      "package": "com.estatesalehelper.app",
       "adaptiveIcon": {
         "backgroundColor": "#F7F4F0",
         "foregroundImage": "./assets/android-icon-foreground.png",

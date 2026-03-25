@@ -30,18 +30,39 @@ export default function SaleDetailScreen() {
 
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  const fetchSale = () => {
     if (!id) return;
+    setLoading(true);
+    setError(false);
     getSaleById(id)
       .then(setSale)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchSale();
   }, [id]);
 
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.accentPrimary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Ionicons name="cloud-offline-outline" size={48} color={colors.textSecondary} style={{ marginBottom: 16 }} />
+        <Text style={styles.errorText}>Could not load this sale</Text>
+        <Text style={[styles.errorText, { fontSize: 14, marginTop: 4 }]}>Check your connection and try again</Text>
+        <Pressable style={styles.retryButton} onPress={fetchSale}>
+          <Text style={styles.retryText}>Try Again</Text>
+        </Pressable>
       </View>
     );
   }
@@ -213,6 +234,20 @@ const styles = StyleSheet.create({
     fontSize: fontSize.body,
     color: colors.textSecondary,
     fontFamily: fonts.uiSans,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: colors.accentPrimary,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: colors.white,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    fontSize: fontSize.uiButton,
   },
   content: {
     padding: spacing.lg,

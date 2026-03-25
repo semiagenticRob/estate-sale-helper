@@ -17,13 +17,58 @@ export function useLocation(): LocationState {
     error: null,
   });
 
-  // TODO: Remove this override once done testing — forces Denver, CO
   useEffect(() => {
-    setState({
-      ...DEFAULT_LOCATION,
-      loading: false,
-      error: null,
-    });
+    let cancelled = false;
+
+    async function getLocation() {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (!cancelled) {
+            setState({
+              ...DEFAULT_LOCATION,
+              loading: false,
+              error: 'Location permission denied',
+            });
+          }
+          return;
+        }
+
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const [geocode] = await Location.reverseGeocodeAsync({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+
+        const city = geocode
+          ? [geocode.city || geocode.subregion, geocode.region].filter(Boolean).join(', ')
+          : DEFAULT_LOCATION.city;
+
+        if (!cancelled) {
+          setState({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            city,
+            loading: false,
+            error: null,
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setState({
+            ...DEFAULT_LOCATION,
+            loading: false,
+            error: 'Could not determine location',
+          });
+        }
+      }
+    }
+
+    getLocation();
+    return () => { cancelled = true; };
   }, []);
 
   return state;

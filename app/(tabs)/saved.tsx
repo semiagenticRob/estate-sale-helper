@@ -35,21 +35,33 @@ export default function SavedScreen() {
     });
   }, [navigation, router]);
 
+  const [fetchError, setFetchError] = useState(false);
+
   // Fetch full sale data from Supabase whenever saved list changes or tab is focused
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       async function fetchSales() {
         setLoading(true);
-        const fetched = await Promise.all(
-          savedSales.map(async (saved) => {
-            const sale = await getSaleById(saved.saleId);
-            return sale ? { ...sale, savedAt: saved.savedAt } : null;
-          })
-        );
-        if (!cancelled) {
-          setSalesData(fetched.filter((s): s is Sale & { savedAt: string } => s !== null));
-          setLoading(false);
+        setFetchError(false);
+        try {
+          const fetched = await Promise.all(
+            savedSales.map(async (saved) => {
+              try {
+                const sale = await getSaleById(saved.saleId);
+                return sale ? { ...sale, savedAt: saved.savedAt } : null;
+              } catch {
+                return null;
+              }
+            })
+          );
+          if (!cancelled) {
+            setSalesData(fetched.filter((s): s is Sale & { savedAt: string } => s !== null));
+          }
+        } catch {
+          if (!cancelled) setFetchError(true);
+        } finally {
+          if (!cancelled) setLoading(false);
         }
       }
       fetchSales();
@@ -63,6 +75,18 @@ export default function SavedScreen() {
     return (
       <View style={styles.empty}>
         <ActivityIndicator size="large" color={colors.accentPrimary} />
+      </View>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyIcon}>!</Text>
+        <Text style={styles.emptyTitle}>Could not load saved sales</Text>
+        <Text style={styles.emptyHint}>
+          Check your connection and try again
+        </Text>
       </View>
     );
   }

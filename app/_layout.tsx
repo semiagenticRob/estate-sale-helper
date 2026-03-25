@@ -37,6 +37,18 @@ export default function RootLayout() {
           name="sale/[id]"
           options={{ title: 'Sale Details', headerBackTitle: 'Back' }}
         />
+        <Stack.Screen
+          name="about"
+          options={{ title: 'About', headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="privacy"
+          options={{ title: 'Privacy Policy', headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="terms"
+          options={{ title: 'Terms of Service', headerBackTitle: 'Back' }}
+        />
       </Stack>
     </SavedSalesProvider>
   );

@@ -99,8 +99,28 @@ export default function ResultsScreen() {
         </View>
       ) : error ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>Error</Text>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.textSecondary} style={{ marginBottom: spacing.base }} />
           <Text style={styles.emptyText}>{error}</Text>
+          <Pressable
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+              searchSales({
+                query: params.query || '',
+                latitude: parseFloat(params.latitude || '39.7392'),
+                longitude: parseFloat(params.longitude || '-104.9903'),
+                radiusMiles: radius,
+                dateRange,
+                stateCode: params.statewide || undefined,
+              })
+                .then(setResults)
+                .catch(() => setError('Could not load results. Please try again.'))
+                .finally(() => setLoading(false));
+            }}
+          >
+            <Text style={styles.retryText}>Try Again</Text>
+          </Pressable>
         </View>
       ) : results.length === 0 ? (
         <View style={styles.centered}>
@@ -212,5 +232,18 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: fonts.uiSans,
     textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.base,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.accentPrimary,
+    borderRadius: radii.button,
+  },
+  retryText: {
+    color: colors.white,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    fontSize: fontSize.uiButton,
   },
 });
