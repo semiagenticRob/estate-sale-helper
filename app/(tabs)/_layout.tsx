@@ -2,6 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../../lib/theme';
+import { getLastSearch } from '../../lib/searchState';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Estate Helper',
+          title: 'Estate Sale Helper',
           tabBarLabel: 'Search',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="search" size={size} color={color} />
@@ -41,6 +42,25 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="mapview"
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            const last = getLastSearch();
+            if (last) {
+              e.preventDefault();
+              navigation.navigate('results', { ...last, viewMode: 'map' });
+            }
+          },
+        })}
+        options={{
+          title: 'Map View',
+          tabBarLabel: 'Map',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="saved"
         options={{
           title: 'Saved Sales',
@@ -49,6 +69,10 @@ export default function TabLayout() {
             <Text style={{ color, fontSize: 22 }}>★</Text>
           ),
         }}
+      />
+      <Tabs.Screen
+        name="listview"
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="results"

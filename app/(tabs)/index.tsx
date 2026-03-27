@@ -13,7 +13,6 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocation } from '../../hooks/useLocation';
-import { DistanceSelector } from '../../components/DistanceSelector';
 import { DateFilter, DATE_RANGE_DISPLAY } from '../../components/DateFilter';
 import { DateRange } from '../../types';
 import { setLastSearch } from '../../lib/searchState';
@@ -47,7 +46,6 @@ function getSuggestionLabel(r: NominatimResult): string {
 export default function HomeScreen() {
   const router = useRouter();
   const location = useLocation();
-  const [distance, setDistance] = useState(25);
   const [dateRange, setDateRange] = useState<DateRange>('thisweekend');
   const [locationQuery, setLocationQuery] = useState('');
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -77,7 +75,7 @@ export default function HomeScreen() {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=5&countrycodes=us&addressdetails=1`,
-        { headers: { 'User-Agent': 'EstateHelper/1.0' } }
+        { headers: { 'User-Agent': 'EstateSaleHelper/1.0' } }
       );
       const data: NominatimResult[] = await res.json();
       setSuggestions(data);
@@ -137,12 +135,12 @@ export default function HomeScreen() {
     } else if (resolvedCoords) {
       lat = resolvedCoords.lat;
       lng = resolvedCoords.lng;
-      searchRadius = distance;
+      searchRadius = 100;
     } else {
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery.trim())}&format=json&limit=1&countrycodes=us`,
-          { headers: { 'User-Agent': 'EstateHelper/1.0' } }
+          { headers: { 'User-Agent': 'EstateSaleHelper/1.0' } }
         );
         const data: NominatimResult[] = await res.json();
         if (!data || data.length === 0) {
@@ -155,7 +153,7 @@ export default function HomeScreen() {
         setLocationError('Could not find that location. Please try again.');
         return;
       }
-      searchRadius = distance;
+      searchRadius = 100;
     }
 
     const params = {
@@ -170,7 +168,7 @@ export default function HomeScreen() {
     router.push({ pathname: '/results', params });
   };
 
-  const buttonLabel = `Show sales ${DATE_RANGE_DISPLAY[dateRange]} \u00B7 ${distance} mi`;
+  const buttonLabel = `Show sales ${DATE_RANGE_DISPLAY[dateRange]}`;
 
   return (
     <View style={styles.wrapper}>
@@ -245,9 +243,6 @@ export default function HomeScreen() {
           </Pressable>
         )}
       </View>
-
-      {/* Distance Selector */}
-      <DistanceSelector selected={distance} onSelect={setDistance} />
 
       {/* Date Filter */}
       <DateFilter selected={dateRange} onSelect={setDateRange} />

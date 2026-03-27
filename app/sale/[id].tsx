@@ -16,6 +16,7 @@ import { ImageGallery } from '../../components/ImageGallery';
 import { SaleMap } from '../../components/SaleMap';
 import { useSavedSales } from '../../hooks/useSavedSales';
 import { getSaleById } from '../../lib/salesApi';
+import { getLastSearch } from '../../lib/searchState';
 import { Sale } from '../../types';
 import { formatDate } from '../../lib/dates';
 import { Ionicons } from '@expo/vector-icons';
@@ -206,6 +207,20 @@ export default function SaleDetailScreen() {
         <Pressable style={styles.tabItem} onPress={() => router.navigate('/')}>
           <Ionicons name="search" size={22} color={colors.textSecondary} />
           <Text style={styles.tabLabel}>Search</Text>
+        </Pressable>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => {
+            const last = getLastSearch();
+            if (last) {
+              router.navigate({ pathname: '/results', params: { ...last, viewMode: 'map' } });
+            } else {
+              router.navigate('/mapview');
+            }
+          }}
+        >
+          <Ionicons name="map-outline" size={22} color={colors.textSecondary} />
+          <Text style={styles.tabLabel}>Map</Text>
         </Pressable>
         <Pressable style={styles.tabItem} onPress={() => router.navigate('/saved')}>
           <Text style={styles.tabIcon}>★</Text>

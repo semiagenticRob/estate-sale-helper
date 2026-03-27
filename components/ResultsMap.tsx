@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { SearchResult } from '../types';
@@ -10,6 +10,8 @@ interface ResultsMapProps {
   centerLng: number;
   radius: number;
   onSalePress: (saleId: string) => void;
+  isSaved: (saleId: string) => boolean;
+  onToggleSave: (saleId: string) => void;
 }
 
 function buildMapHtml(
@@ -27,6 +29,9 @@ function buildMapHtml(
       state: r.state,
       distance: r.distanceMiles,
       company: r.companyName || '',
+      imageUrl: r.headerImageUrl || r.images?.[0]?.imageUrl || '',
+      startDate: r.startDate,
+      endDate: r.endDate,
     }))
   );
 
@@ -49,19 +54,13 @@ function buildMapHtml(
     transform: rotate(-45deg);
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   }
+  .sale-marker.active {
+    background: ${colors.statusActive};
+  }
   .sale-marker-inner {
     transform: rotate(45deg);
     color: #fff; font-size: 14px; font-weight: bold;
     font-family: -apple-system, sans-serif;
-  }
-  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
-    background: rgba(184,137,106,0.35) !important;
-  }
-  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
-    background: ${colors.accentPrimary} !important;
-    color: #fff !important;
-    font-family: -apple-system, sans-serif;
-    font-weight: 600;
   }
   .sale-popup .leaflet-popup-content-wrapper {
     border-radius: 10px; padding: 0; overflow: hidden;
@@ -69,6 +68,19 @@ function buildMapHtml(
   }
   .sale-popup .leaflet-popup-content { margin: 0; min-width: 200px; }
   .sale-popup .leaflet-popup-tip { border-top-color: #fff; }
+  .popup-wrapper { position: relative; }
+  .popup-image {
+    width: 100%; height: 130px; object-fit: cover; display: block;
+  }
+  .popup-save {
+    position: absolute; top: 8px; left: 8px;
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.92); border: none; border-radius: 50%;
+    font-size: 17px; line-height: 30px; text-align: center;
+    cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    z-index: 500; color: ${colors.textSecondary};
+  }
+  .popup-save.saved { color: ${colors.accentPrimary}; }
   .popup-body {
     padding: 12px 14px; font-family: -apple-system, sans-serif;
   }
@@ -108,15 +120,40 @@ function buildMapHtml(
   var cluster = L.markerClusterGroup({
     maxClusterRadius: 45,
     spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false
+    showCoverageOnHover: false,
+    iconCreateFunction: function(cluster) {
+      var children = cluster.getAllChildMarkers();
+      var total = children.length;
+      var activeCount = children.filter(function(m) { return m.options.isActive; }).length;
+      var size = total < 10 ? 40 : total < 100 ? 50 : 60;
+      var fontSize = size * 0.35;
+      var html;
+      if (activeCount === total) {
+        html = '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:${colors.statusActive};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;font-weight:600;color:#fff;font-size:'+fontSize+'px">'+total+'</div>';
+      } else if (activeCount === 0) {
+        html = '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:${colors.accentPrimary};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;font-weight:600;color:#fff;font-size:'+fontSize+'px">'+total+'</div>';
+      } else {
+        html = '<svg width="'+size+'" height="'+size+'" viewBox="0 0 40 40" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">' +
+          '<path d="M20,2 A18,18 0 0,0 20,38 Z" fill="${colors.statusActive}"/>' +
+          '<path d="M20,2 A18,18 0 0,1 20,38 Z" fill="${colors.accentPrimary}"/>' +
+          '<circle cx="20" cy="20" r="18" fill="none" stroke="white" stroke-width="2.5"/>' +
+          '<text x="20" y="25" text-anchor="middle" font-size="'+fontSize+'" font-weight="600" font-family="-apple-system,sans-serif" fill="white">'+total+'</text>' +
+          '</svg>';
+      }
+      return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size/2, size/2] });
+    }
   });
 
   var bounds = [];
 
   markers.forEach(function(m) {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var start = new Date(m.startDate); start.setHours(0,0,0,0);
+    var end = new Date(m.endDate); end.setHours(0,0,0,0);
+    var isActive = today >= start && today <= end;
     var icon = L.divIcon({
       className: '',
-      html: '<div class="sale-marker"><span class="sale-marker-inner">★</span></div>',
+      html: '<div class="sale-marker' + (isActive ? ' active' : '') + '"><span class="sale-marker-inner">★</span></div>',
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -34]
@@ -125,16 +162,21 @@ function buildMapHtml(
     var loc = m.city + ', ' + m.state + (m.distance > 0 ? ' · ' + m.distance + ' mi' : '');
     var sub = m.company ? m.company + ' · ' + loc : loc;
 
+    var imgHtml = m.imageUrl ? '<img class="popup-image" src="' + m.imageUrl + '" />' : '';
     var popup = L.popup({ className: 'sale-popup', closeButton: true })
       .setContent(
-        '<div class="popup-body">' +
-          '<div class="popup-title">' + m.title.replace(/</g, '&lt;') + '</div>' +
-          '<div class="popup-sub">' + sub.replace(/</g, '&lt;') + '</div>' +
-          '<button class="popup-btn" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'navigate\\',id:\\'' + m.id + '\\'}))">View Details</button>' +
+        '<div class="popup-wrapper">' +
+          imgHtml +
+          '<button id="save-' + m.id + '" class="popup-save" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'save\\',id:\\'' + m.id + '\\'}));">☆</button>' +
+          '<div class="popup-body">' +
+            '<div class="popup-title">' + m.title.replace(/</g, '&lt;') + '</div>' +
+            '<div class="popup-sub">' + sub.replace(/</g, '&lt;') + '</div>' +
+            '<button class="popup-btn" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'navigate\\',id:\\'' + m.id + '\\'}))">View Details</button>' +
+          '</div>' +
         '</div>'
       );
 
-    var marker = L.marker([m.lat, m.lng], { icon: icon }).bindPopup(popup);
+    var marker = L.marker([m.lat, m.lng], { icon: icon, isActive: isActive }).bindPopup(popup);
     cluster.addLayer(marker);
     bounds.push([m.lat, m.lng]);
   });
@@ -160,8 +202,21 @@ export function ResultsMap({
   centerLng,
   radius,
   onSalePress,
+  isSaved,
+  onToggleSave,
 }: ResultsMapProps) {
   const webViewRef = useRef<WebView>(null);
+  const isSavedRef = useRef(isSaved);
+  isSavedRef.current = isSaved;
+
+  const handleLoad = useCallback(() => {
+    const savedIds = results.filter((r) => isSavedRef.current(r.id)).map((r) => r.id);
+    if (savedIds.length === 0) return;
+    const js = savedIds.map((id) =>
+      `var b=document.getElementById('save-${id}');if(b){b.classList.add('saved');b.textContent='★';}`
+    ).join('') + 'true;';
+    webViewRef.current?.injectJavaScript(js);
+  }, [results]);
 
   const handleMessage = useCallback(
     (event: WebViewMessageEvent) => {
@@ -169,15 +224,30 @@ export function ResultsMap({
         const data = JSON.parse(event.nativeEvent.data);
         if (data.type === 'navigate' && data.id) {
           onSalePress(data.id);
+        } else if (data.type === 'save' && data.id) {
+          onToggleSave(data.id);
+          webViewRef.current?.injectJavaScript(`
+            (function() {
+              var btn = document.getElementById('save-${data.id}');
+              if (btn) {
+                var nowSaved = btn.classList.toggle('saved');
+                btn.textContent = nowSaved ? '★' : '☆';
+              }
+            })();
+            true;
+          `);
         }
       } catch {
         // ignore malformed messages
       }
     },
-    [onSalePress]
+    [onSalePress, onToggleSave]
   );
 
-  const html = buildMapHtml(results, centerLat, centerLng);
+  const html = useMemo(
+    () => buildMapHtml(results, centerLat, centerLng),
+    [results, centerLat, centerLng]
+  );
 
   return (
     <View style={styles.container}>
@@ -187,6 +257,7 @@ export function ResultsMap({
         style={styles.webview}
         originWhitelist={['*']}
         onMessage={handleMessage}
+        onLoad={handleLoad}
         javaScriptEnabled
         domStorageEnabled
         startInLoadingState

@@ -1,4 +1,4 @@
-# Estate Helper Scraper
+# Estate Sale Helper Scraper
 
 Scrapes estate sales from estatesales.net (TN + CO) and upserts to Supabase.
 

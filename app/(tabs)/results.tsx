@@ -26,13 +26,16 @@ export default function ResultsScreen() {
     radius: string;
     dateRange: string;
     statewide?: string;
+    viewMode?: string;
   }>();
   const { toggleSave, isSaved } = useSavedSales();
 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>(
+    params.viewMode === 'list' ? 'list' : 'map'
+  );
 
   const hasQuery = Boolean(params.query?.trim());
   const radius = parseInt(params.radius || '25', 10);
@@ -137,6 +140,8 @@ export default function ResultsScreen() {
           centerLng={parseFloat(params.longitude || '-104.9903')}
           radius={radius}
           onSalePress={(id) => router.push(`/sale/${id}`)}
+          isSaved={isSaved}
+          onToggleSave={toggleSave}
         />
       ) : (
         <FlatList

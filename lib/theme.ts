@@ -1,5 +1,5 @@
 /**
- * Estate Helper — "Gentle Authority" Design System
+ * Estate Sale Helper — "Gentle Authority" Design System
  *
  * Centralized design tokens. Import from here instead of
  * hard-coding hex values or magic numbers in components.

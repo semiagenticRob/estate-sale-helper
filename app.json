@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Estate Helper",
-    "slug": "estate-helper",
+    "name": "Estate Sale Helper",
+    "slug": "estate-sale-helper",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "estate-helper",
+    "scheme": "estate-sale-helper",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Estate Helper uses your location to find nearby estate sales."
+        "NSLocationWhenInUseUsageDescription": "Estate Sale Helper uses your location to find nearby estate sales."
       },
       "bundleIdentifier": "com.estatesalehelper.app",
       "privacyManifests": {

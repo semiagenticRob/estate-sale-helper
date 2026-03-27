@@ -1,5 +1,5 @@
 /**
- * Estate Helper Scraper — Entry Point
+ * Estate Sale Helper Scraper — Entry Point
  *
  * This service will scrape estate sale listings from estatesales.net
  * and store them in Supabase. It runs on a schedule (every 6-12 hours).
@@ -14,7 +14,7 @@
  * 5. Repeat on a cron schedule
  */
 
-console.log('Estate Helper Scraper');
+console.log('Estate Sale Helper Scraper');
 console.log('=====================');
 console.log('This scraper will be implemented in Phase 3.');
 console.log('It will fetch estate sale listings from estatesales.net');

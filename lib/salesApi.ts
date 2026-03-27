@@ -159,6 +159,7 @@ async function searchByState(params: {
     .from('sales')
     .select('id, external_id, title, company_name, address, city, state, zip_code, latitude, longitude, start_date, end_date, description, terms, sale_hours, url')
     .eq('state', abbrev)
+    .eq('is_online_only', false)
     .lte('start_date', endDate)
     .gte('end_date', startDate)
     .order('start_date');

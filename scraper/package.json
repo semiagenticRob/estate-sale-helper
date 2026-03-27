@@ -1,7 +1,7 @@
 {
-  "name": "estate-helper-scraper",
+  "name": "estate-sale-helper-scraper",
   "version": "1.0.0",
-  "description": "Scraper service for Estate Helper — fetches estate sale listings from estatesales.net",
+  "description": "Scraper service for Estate Sale Helper — fetches estate sale listings from estatesales.net",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
