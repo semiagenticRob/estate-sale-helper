@@ -11,7 +11,7 @@ Available on the [App Store](https://apps.apple.com/app/id6761272980).
 Having trouble with the app? We're here to help.
 
 - **Open a support ticket**: [GitHub Issues](https://github.com/semiagenticRob/estate-sale-helper/issues)
-- **Email**: support@estatesalehelper.com
+- **Email**: eswstrategies@gmail.com
 
 Please include your device model and iOS version when reporting issues.
 
@@ -31,7 +31,7 @@ Please include your device model and iOS version when reporting issues.
 
 ## Privacy
 
-Read our [Privacy Policy](https://github.com/semiagenticRob/estate-sale-helper/blob/master/docs/PRIVACY.md).
+Read our [Privacy Policy](https://github.com/semiagenticRob/estate-sale-helper/blob/master/docs/privacy.html).
 
 Estate Sale Helper collects your approximate location (with permission) to find nearby sales. No personal data is stored or shared with third parties.
 
