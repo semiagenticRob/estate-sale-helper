@@ -15,14 +15,23 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Estate Sale Helper uses your location to find nearby estate sales."
+        "NSLocationWhenInUseUsageDescription": "Estate Sale Helper uses your location to find nearby estate sales.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.estatesalehelper.app",
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
-            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
           }
         ]
       }
@@ -50,6 +59,13 @@
       "expo-router",
       "expo-location",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4ffbb57b-df50-47bd-b591-9e7a7e2a40b6"
+      }
+    },
+    "owner": "semiagenticrob"
   }
 }

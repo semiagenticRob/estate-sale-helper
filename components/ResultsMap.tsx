@@ -20,19 +20,22 @@ function buildMapHtml(
   centerLng: number,
 ): string {
   const markers = JSON.stringify(
-    results.map((r) => ({
-      id: r.id,
-      lat: r.latitude,
-      lng: r.longitude,
-      title: r.title,
-      city: r.city,
-      state: r.state,
-      distance: r.distanceMiles,
-      company: r.companyName || '',
-      imageUrl: r.headerImageUrl || r.images?.[0]?.imageUrl || '',
-      startDate: r.startDate,
-      endDate: r.endDate,
-    }))
+    results
+      .filter((r) => r.latitude && r.longitude)
+      .slice(0, 150)
+      .map((r) => ({
+        id: r.id,
+        lat: r.latitude,
+        lng: r.longitude,
+        title: r.title || 'Estate Sale',
+        city: r.city || '',
+        state: r.state || '',
+        distance: r.distanceMiles,
+        company: r.companyName || '',
+        imageUrl: r.headerImageUrl || r.images?.[0]?.imageUrl || '',
+        startDate: r.startDate,
+        endDate: r.endDate,
+      }))
   );
 
   return `<!DOCTYPE html>
@@ -159,7 +162,7 @@ function buildMapHtml(
       popupAnchor: [0, -34]
     });
 
-    var loc = m.city + ', ' + m.state + (m.distance > 0 ? ' · ' + m.distance + ' mi' : '');
+    var loc = (m.city || '') + ', ' + (m.state || '') + (m.distance > 0 ? ' · ' + m.distance + ' mi' : '');
     var sub = m.company ? m.company + ' · ' + loc : loc;
 
     var imgHtml = m.imageUrl ? '<img class="popup-image" src="' + m.imageUrl + '" />' : '';
@@ -169,8 +172,8 @@ function buildMapHtml(
           imgHtml +
           '<button id="save-' + m.id + '" class="popup-save" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'save\\',id:\\'' + m.id + '\\'}));">☆</button>' +
           '<div class="popup-body">' +
-            '<div class="popup-title">' + m.title.replace(/</g, '&lt;') + '</div>' +
-            '<div class="popup-sub">' + sub.replace(/</g, '&lt;') + '</div>' +
+            '<div class="popup-title">' + (m.title || 'Estate Sale').replace(/</g, '&lt;') + '</div>' +
+            '<div class="popup-sub">' + (sub || '').replace(/</g, '&lt;') + '</div>' +
             '<button class="popup-btn" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'navigate\\',id:\\'' + m.id + '\\'}))">View Details</button>' +
           '</div>' +
         '</div>'

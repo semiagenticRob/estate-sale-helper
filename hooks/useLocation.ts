@@ -22,6 +22,14 @@ export function useLocation(): LocationState {
 
     async function getLocation() {
       try {
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+        if (!servicesEnabled) {
+          if (!cancelled) {
+            setState({ ...DEFAULT_LOCATION, loading: false, error: 'Location services disabled' });
+          }
+          return;
+        }
+
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           if (!cancelled) {
