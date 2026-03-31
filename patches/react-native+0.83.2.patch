@@ -1,0 +1,20 @@
+diff --git a/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm b/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
+index 6646570..6d1c821 100644
+--- a/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
++++ b/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
+@@ -470,7 +470,14 @@ TraceSection s(
+     @try {
+       [inv invokeWithTarget:strongModule];
+     } @catch (NSException *exception) {
+-      throw convertNSExceptionToJSError(runtime, exception, std::string{moduleName}, methodNameStr);
++      // PATCH: Do NOT call convertNSExceptionToJSError here.
++      // performVoidMethodInvocation runs on com.meta.react.turbomodulemanager.queue (a background
++      // thread). Calling into JSI/Hermes from that thread is not thread-safe and causes GC
++      // corruption (SIGSEGV in HadesGC). See react-native issues #53960 / #55337.
++      // Log the exception and return cleanly instead.
++      NSLog(@"[RCTTurboModule] %s.%s raised NSException — suppressed to prevent background-thread "
++            @"JSI write (RN #53960/#55337). Exception: %@ — %@",
++            moduleName, methodName, exception.name, exception.reason);
+     } @finally {
+       [retainedObjectsForInvocation removeAllObjects];
+     }

@@ -19,9 +19,12 @@ export function SavedSalesProvider({ children }: { children: React.ReactNode }) 
   const reload = useCallback(async () => {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEY);
-      setSavedSales(data ? JSON.parse(data) : []);
+      if (data) {
+        const parsed = JSON.parse(data);
+        setSavedSales(Array.isArray(parsed) ? parsed : []);
+      }
     } catch {
-      // Silently fail — saved sales are not critical
+      // AsyncStorage or JSON.parse failed — not critical, keep current state
     }
   }, []);
 
@@ -37,7 +40,11 @@ export function SavedSalesProvider({ children }: { children: React.ReactNode }) 
         : [...savedSales, { saleId, savedAt: new Date().toISOString() }];
 
       setSavedSales(updated);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch {
+        // Persist failed — UI state is already updated; storage error is non-critical
+      }
     },
     [savedSales]
   );
