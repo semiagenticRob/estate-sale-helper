@@ -3,6 +3,7 @@ import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { SearchResult } from '../types';
 import { colors } from '../lib/theme';
+import { formatDateRange } from '../lib/dates';
 
 interface ResultsMapProps {
   results: SearchResult[];
@@ -35,6 +36,7 @@ function buildMapHtml(
         imageUrl: r.headerImageUrl || r.images?.[0]?.imageUrl || '',
         startDate: r.startDate,
         endDate: r.endDate,
+        dateRange: formatDateRange(r.startDate, r.endDate),
       }))
   );
 
@@ -92,6 +94,9 @@ function buildMapHtml(
     margin-bottom: 2px; line-height: 1.3;
   }
   .popup-sub {
+    font-size: 12px; color: ${colors.textSecondary}; margin-bottom: 4px;
+  }
+  .popup-dates {
     font-size: 12px; color: ${colors.textSecondary}; margin-bottom: 8px;
   }
   .popup-btn {
@@ -174,6 +179,7 @@ function buildMapHtml(
           '<div class="popup-body">' +
             '<div class="popup-title">' + (m.title || 'Estate Sale').replace(/</g, '&lt;') + '</div>' +
             '<div class="popup-sub">' + (sub || '').replace(/</g, '&lt;') + '</div>' +
+            '<div class="popup-dates">' + (m.dateRange || '') + '</div>' +
             '<button class="popup-btn" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({type:\\'navigate\\',id:\\'' + m.id + '\\'}))">View Details</button>' +
           '</div>' +
         '</div>'

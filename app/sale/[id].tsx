@@ -18,7 +18,6 @@ import { useSavedSales } from '../../hooks/useSavedSales';
 import { getSaleById } from '../../lib/salesApi';
 import { getLastSearch } from '../../lib/searchState';
 import { Sale } from '../../types';
-import { formatDate } from '../../lib/dates';
 import { Ionicons } from '@expo/vector-icons';
 import { detectPaymentTypes } from '../../lib/paymentTypes';
 import { colors, fonts, fontSize, spacing, radii, shadows } from '../../lib/theme';
@@ -114,12 +113,6 @@ export default function SaleDetailScreen() {
 
           {/* Date, Time, and Location */}
           <View style={styles.infoSection}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Date:</Text>
-              <Text style={styles.infoText}>
-                {formatDate(sale.startDate, true)} – {formatDate(sale.endDate, true)}
-              </Text>
-            </View>
             {sale.saleHours ? (
               <View style={styles.hoursBlock}>
                 <Text style={styles.infoLabel}>Hours:</Text>
