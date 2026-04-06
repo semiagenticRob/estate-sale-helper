@@ -116,9 +116,11 @@ export default function SaleDetailScreen() {
             {sale.saleHours ? (
               <View style={styles.hoursBlock}>
                 <Text style={styles.infoLabel}>Hours:</Text>
-                {sale.saleHours.split('\n').map((line, i) => (
-                  <Text key={i} style={styles.hoursLine}>{line}</Text>
-                ))}
+                <View style={styles.hoursLines}>
+                  {sale.saleHours.split('\n').map((line, i) => (
+                    <Text key={i} style={styles.hoursLine}>{line}</Text>
+                  ))}
+                </View>
               </View>
             ) : null}
             <View style={styles.infoRow}>
@@ -310,7 +312,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   hoursBlock: {
-    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  hoursLines: {
+    flex: 1,
+    alignItems: 'flex-end',
+    gap: 2,
   },
   hoursLine: {
     fontSize: fontSize.bodySmall,
