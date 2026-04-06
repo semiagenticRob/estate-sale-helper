@@ -413,11 +413,11 @@ def compute_api_hash(data: dict) -> str:
 
 
 def get_existing_sale(external_id: str) -> Optional[dict]:
-    """Return stored api_hash and detail_scraped_at for a sale, or None if not found."""
+    """Return stored api_hash, detail_scraped_at, and description for a sale, or None if not found."""
     try:
         result = (
             supabase.table('sales')
-            .select('id,api_hash,detail_scraped_at')
+            .select('id,api_hash,detail_scraped_at,description')
             .eq('external_id', external_id)
             .maybe_single()
             .execute()
@@ -450,6 +450,11 @@ def needs_detail_scrape(existing: Optional[dict], current_hash: str) -> bool:
     scraped_at_str = existing.get('detail_scraped_at')
     if not scraped_at_str:
         return True  # never scraped
+
+    # If the previous scrape captured no description, retry on every run until
+    # we get content — sellers often add descriptions after initially listing.
+    if not existing.get('description'):
+        return True
 
     scraped_at = datetime.fromisoformat(scraped_at_str.replace('Z', '+00:00'))
     age = datetime.now(timezone.utc) - scraped_at
