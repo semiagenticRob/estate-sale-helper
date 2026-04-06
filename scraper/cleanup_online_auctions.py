@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-One-time cleanup: remove online-only auctions from the database.
+One-time cleanup: mark online-only auctions as is_online_only=TRUE in the database.
 
 Fetches all external_ids from Supabase, re-queries the estatesales.net API
-to check isMarketplaceSale / type, then deletes matching sales and their images.
+to check isMarketplaceSale / type, then flags matching sales so the search_sales
+RPC filter excludes them.
 
 Usage:
-  python cleanup_online_auctions.py           # dry run (shows what would be deleted)
-  python cleanup_online_auctions.py --delete  # actually delete
+  python cleanup_online_auctions.py           # dry run (shows what would be flagged)
+  python cleanup_online_auctions.py --apply   # actually update is_online_only=TRUE
 """
 
 import argparse
@@ -59,15 +60,17 @@ def fetch_all_db_sales() -> list[dict]:
     return results
 
 
-def is_online_only(item: dict) -> bool:
-    """Return True if this API record represents an online-only auction."""
+AUCTION_TYPES = {2, 64, 16384}
+# type=2:     live in-person public auction (bidding format, not browse-and-buy)
+# type=64:    online-only auction (bid on seller's website)
+# type=16384: online antique/shipping sale
+
+
+def is_auction_or_online(item: dict) -> bool:
+    """Return True if this API record is an auction or online-only sale."""
     if item.get('isMarketplaceSale'):
         return True
-    sale_type = item.get('type')
-    # type may be an int code or a string — handle both
-    if isinstance(sale_type, str) and 'online' in sale_type.lower():
-        return True
-    return False
+    return item.get('type') in AUCTION_TYPES
 
 
 def check_online_batch(external_ids: list[str], debug_types: set) -> set[str]:
@@ -85,7 +88,7 @@ def check_online_batch(external_ids: list[str], debug_types: set) -> set[str]:
             if resp.status_code == 200:
                 for item in resp.json():
                     debug_types.add((item.get('type'), item.get('isMarketplaceSale')))
-                    if is_online_only(item):
+                    if is_auction_or_online(item):
                         online_ids.add(str(item['id']))
             else:
                 print(f'  HTTP {resp.status_code} for batch — skipping')
@@ -94,14 +97,13 @@ def check_online_batch(external_ids: list[str], debug_types: set) -> set[str]:
     return online_ids
 
 
-def delete_sale(db_id: str, external_id: str, dry_run: bool):
+def flag_sale(db_id: str, external_id: str, dry_run: bool):
     if dry_run:
         return
     try:
-        supabase.table('sale_images').delete().eq('sale_id', db_id).execute()
-        supabase.table('sales').delete().eq('id', db_id).execute()
+        supabase.table('sales').update({'is_online_only': True}).eq('id', db_id).execute()
     except Exception as e:
-        print(f'  Delete error for {external_id}: {e}')
+        print(f'  Update error for {external_id}: {e}')
 
 
 def main(dry_run: bool):
@@ -130,25 +132,25 @@ def main(dry_run: bool):
     print(f'\nTotal online-only auctions found: {len(online_external_ids)}')
 
     if not online_external_ids:
-        print('Nothing to delete.')
+        print('Nothing to flag.')
         return
 
     print()
     for ext_id in sorted(online_external_ids):
         db_id = ext_to_db[ext_id]
-        action = 'Would delete' if dry_run else 'Deleting'
+        action = 'Would flag' if dry_run else 'Flagging'
         print(f'  {action} sale {ext_id} (db id: {db_id})')
-        delete_sale(db_id, ext_id, dry_run)
+        flag_sale(db_id, ext_id, dry_run)
 
     print()
     if dry_run:
-        print(f'Dry run complete. Run with --delete to remove {len(online_external_ids)} sales.')
+        print(f'Dry run complete. Run with --apply to flag {len(online_external_ids)} sales as is_online_only=TRUE.')
     else:
-        print(f'Deleted {len(online_external_ids)} online-only auctions and their images.')
+        print(f'Flagged {len(online_external_ids)} online-only auctions as is_online_only=TRUE.')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remove online-only auctions from the DB')
-    parser.add_argument('--delete', action='store_true', help='Actually delete (default is dry run)')
+    parser.add_argument('--apply', action='store_true', help='Actually flag sales (default is dry run)')
     args = parser.parse_args()
-    main(dry_run=not args.delete)
+    main(dry_run=not args.apply)

@@ -170,10 +170,12 @@ export default function SaleDetailScreen() {
           </View>
 
           {/* Description */}
-          <View style={styles.descriptionSection}>
-            <Text style={styles.sectionTitle}>About This Sale</Text>
-            <Text style={styles.description}>{sale.description}</Text>
-          </View>
+          {sale.description ? (
+            <View style={styles.descriptionSection}>
+              <Text style={styles.sectionTitle}>About This Sale</Text>
+              <Text style={styles.description}>{sale.description}</Text>
+            </View>
+          ) : null}
 
           {/* Map */}
           <View style={styles.mapSection}>
