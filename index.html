@@ -55,6 +55,12 @@
       50%       { transform: translateY(-12px); }
     }
 
+    /* Flipped variant for hero Doris — scaleX(-1) preserved through Y movement */
+    @keyframes float-flipped {
+      0%, 100% { transform: scaleX(-1) translateY(0px); }
+      50%       { transform: scaleX(-1) translateY(-12px); }
+    }
+
     /* ── Nav ───────────────────────────────────── */
     nav {
       position: sticky;
@@ -71,13 +77,15 @@
       justify-content: space-between;
     }
 
+    /* Non-linked span — no pointer, no underline */
     .nav-logo {
       font-family: 'Fraunces', Georgia, serif;
       font-size: 1.1rem;
       font-weight: 600;
       letter-spacing: -0.01em;
       color: var(--deep);
-      text-decoration: none;
+      cursor: default;
+      user-select: none;
     }
 
     .nav-cta {
@@ -193,8 +201,20 @@
       max-width: 440px;
     }
 
-    .hero-proof {
-      margin-top: 1rem;
+    /* Trust strip below CTA */
+    .hero-trust {
+      margin-top: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .hero-trust-stars {
+      color: var(--amber);
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+    }
+    .hero-trust-text {
       font-family: 'Lora', serif;
       font-size: 0.85rem;
       font-style: italic;
@@ -235,11 +255,12 @@
       z-index: 2;
     }
 
+    /* Flipped so her pointing finger aims toward the CTA */
     .doris-hero {
       width: 185px;
       flex-shrink: 0;
       mix-blend-mode: multiply;
-      animation: float 7s ease-in-out infinite;
+      animation: float-flipped 7s ease-in-out infinite;
       align-self: flex-end;
       z-index: 3;
       margin-left: -20px;
@@ -259,11 +280,19 @@
       padding: 3rem 1.5rem 4rem;
     }
 
+    .pain-subtitle {
+      font-family: 'Lora', serif;
+      font-size: 0.95rem;
+      color: var(--brown);
+      margin-bottom: 1.5rem;
+      font-style: italic;
+    }
+
     .pain-grid {
       display: grid;
       gap: 1.5rem;
       grid-template-columns: 1fr;
-      margin-top: 1.25rem;
+      margin-top: 0;
     }
 
     @media (min-width: 768px) {
@@ -273,7 +302,7 @@
     .pain-card {
       background: var(--paper);
       border-radius: 3px;
-      padding: 2rem 1.75rem 1.75rem;
+      padding: 1.75rem 1.75rem 1.5rem;
       border: 1px solid var(--border-light);
       border-left: 3px solid var(--amber);
       box-shadow: 3px 4px 18px rgba(28, 14, 6, 0.08);
@@ -289,15 +318,6 @@
       box-shadow: 4px 8px 28px rgba(28, 14, 6, 0.14);
     }
 
-    .pain-quote {
-      font-family: 'Fraunces', serif;
-      font-size: 3rem;
-      color: var(--amber);
-      line-height: 1;
-      margin-bottom: 0.5rem;
-      opacity: 0.65;
-    }
-
     .pain-card p {
       font-family: 'Lora', serif;
       font-style: italic;
@@ -306,12 +326,80 @@
       line-height: 1.72;
     }
 
-    /* ── Features ──────────────────────────────── */
-    .features-section {
+    .pain-attr {
+      margin-top: 0.85rem;
+      font-family: 'Lora', serif;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-style: normal;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Steps ─────────────────────────────────── */
+    .steps-section {
       background: var(--paper);
-      padding: 5.5rem 1.5rem;
+      padding: 5rem 1.5rem;
       border-top: 1px solid var(--border-light);
       border-bottom: 1px solid var(--border-light);
+    }
+
+    .steps-grid {
+      display: grid;
+      gap: 3rem;
+      grid-template-columns: 1fr;
+      margin-top: 3.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .steps-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .step-label {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-size: 0.95rem;
+      color: var(--amber);
+      margin-bottom: 1.5rem;
+    }
+
+    .phone-step {
+      width: 168px;
+      border-radius: 30px;
+      border: 6px solid var(--deep);
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(28, 14, 6, 0.16);
+      background: var(--deep);
+      margin-bottom: 1.5rem;
+    }
+    .phone-step img { width: 100%; display: block; }
+
+    .step h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+      color: var(--deep);
+    }
+
+    .step p {
+      font-family: 'Lora', serif;
+      color: var(--brown);
+      font-size: 0.95rem;
+      line-height: 1.68;
+      max-width: 210px;
+    }
+
+    /* ── Features ──────────────────────────────── */
+    .features-section {
+      padding: 5.5rem 1.5rem;
     }
 
     .features-rows {
@@ -376,65 +464,6 @@
       background: var(--deep);
     }
     .phone-feature img { width: 100%; display: block; }
-
-    /* ── Steps ─────────────────────────────────── */
-    .steps-section {
-      padding: 5.5rem 1.5rem;
-    }
-
-    .steps-grid {
-      display: grid;
-      gap: 3rem;
-      grid-template-columns: 1fr;
-      margin-top: 3.5rem;
-    }
-
-    @media (min-width: 768px) {
-      .steps-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .step-label {
-      font-family: 'Fraunces', serif;
-      font-style: italic;
-      font-size: 0.95rem;
-      color: var(--amber);
-      margin-bottom: 1.5rem;
-    }
-
-    .phone-step {
-      width: 168px;
-      border-radius: 30px;
-      border: 6px solid var(--deep);
-      overflow: hidden;
-      box-shadow: 0 12px 32px rgba(28, 14, 6, 0.16);
-      background: var(--deep);
-      margin-bottom: 1.5rem;
-    }
-    .phone-step img { width: 100%; display: block; }
-
-    .step h3 {
-      font-family: 'Fraunces', serif;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.01em;
-      color: var(--deep);
-    }
-
-    .step p {
-      font-family: 'Lora', serif;
-      color: var(--brown);
-      font-size: 0.95rem;
-      line-height: 1.68;
-      max-width: 210px;
-    }
 
     /* ── CTA dark ──────────────────────────────── */
     .cta-section {
@@ -539,7 +568,7 @@
 
 <!-- ── Nav ───────────────────────────────────────── -->
 <nav>
-  <a href="/" class="nav-logo">Estate Sale Helper</a>
+  <span class="nav-logo">Estate Sale Helper</span>
   <a href="https://apps.apple.com/us/app/id6761272980" class="nav-cta">Download Free</a>
 </nav>
 
@@ -561,7 +590,10 @@
             <span class="appstore-btn-large">App Store</span>
           </div>
         </a>
-        <p class="hero-proof">Free · No account required · Nationwide</p>
+        <div class="hero-trust">
+          <span class="hero-trust-stars">★★★★★</span>
+          <span class="hero-trust-text">Free · No account required · Nationwide</span>
+        </div>
       </div>
 
       <div class="hero-visual" aria-hidden="true">
@@ -584,19 +616,58 @@
 <section class="pain-section">
   <div class="container">
     <span class="eyebrow">Sound familiar?</span>
+    <p class="pain-subtitle">What we keep hearing from estate sale shoppers.</p>
     <div class="pain-grid">
       <div class="pain-card">
-        <div class="pain-quote">"</div>
-        <p>Third time driving 40 minutes to a cash-only sale this month.</p>
+        <p>"Third time driving 40 minutes to a cash-only sale this month."</p>
+        <div class="pain-attr">— r/estatesales community</div>
       </div>
       <div class="pain-card">
-        <div class="pain-quote">"</div>
-        <p>The listing had great photos. Half the stuff was gone by 9am.</p>
+        <p>"The listing had great photos. Half the stuff was gone by 9am."</p>
+        <div class="pain-attr">— r/flipping community</div>
       </div>
       <div class="pain-card">
-        <div class="pain-quote">"</div>
-        <p>You had four browser tabs open. Still missed the better sale two streets over.</p>
+        <p>"You had four browser tabs open. Still missed the better sale two streets over."</p>
+        <div class="pain-attr">— r/estatesales community</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ───────────────────────────────── -->
+<section class="steps-section">
+  <div class="container">
+    <span class="eyebrow">How it works</span>
+    <h2 class="section-title">From your couch to the sale in three steps.</h2>
+    <div class="steps-grid">
+
+      <div class="step">
+        <div class="step-label">Step one</div>
+        <div class="phone-step">
+          <img src="assets/screenshots/home.png" alt="Search screen with location and date filters" loading="lazy">
+        </div>
+        <h3>Search your area</h3>
+        <p>Enter your zip or use current location. Filter by today, this weekend, or all upcoming.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-label">Step two</div>
+        <div class="phone-step">
+          <img src="assets/screenshots/map-popup.png" alt="Map with sale preview popup" loading="lazy">
+        </div>
+        <h3>Browse and plan</h3>
+        <p>Photos, hours, payment methods, and distance — all before you leave the house.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-label">Step three</div>
+        <div class="phone-step">
+          <img src="assets/screenshots/detail.png" alt="Sale detail page with directions button" loading="lazy">
+        </div>
+        <h3>Go</h3>
+        <p>One tap to get directions from the detail page. Your saved list rides along.</p>
+      </div>
+
     </div>
   </div>
 </section>
@@ -604,8 +675,8 @@
 <!-- ── Features ───────────────────────────────────── -->
 <section class="features-section">
   <div class="container">
-    <span class="eyebrow">Here's what changes</span>
-    <h2 class="section-title">Everything you need to plan a great Saturday.</h2>
+    <span class="eyebrow">What the app does</span>
+    <h2 class="section-title">The information you wish you had before every sale.</h2>
 
     <div class="features-rows">
 
@@ -654,52 +725,11 @@
           <h3>Fresh listings every morning</h3>
           <p>New sales show up before your weekend starts — updated daily from estate sale sources across the country. You never miss one that just posted.</p>
         </div>
-        <div class="feature-visual" style="justify-content: center;">
-          <div style="text-align: center;">
-            <div style="width: 120px; height: 120px; border-radius: 26px; overflow: hidden; box-shadow: 0 16px 40px rgba(28,14,6,0.2); margin: 0 auto 1rem;">
-              <img src="assets/icon.png" alt="Estate Sale Helper app icon" loading="lazy" style="width: 100%; display: block;">
-            </div>
-            <p style="font-family: 'Lora', serif; font-size: 0.85rem; font-style: italic; color: var(--muted);">Estate Sale Helper<br>Available on iOS</p>
+        <div class="feature-visual">
+          <div class="phone-feature">
+            <img src="assets/screenshots/map.png" alt="Map view showing estate sales across a wide area" loading="lazy">
           </div>
         </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ── How it works ───────────────────────────────── -->
-<section class="steps-section">
-  <div class="container">
-    <span class="eyebrow">How it works</span>
-    <h2 class="section-title">From your couch to the sale in three steps.</h2>
-    <div class="steps-grid">
-
-      <div class="step">
-        <div class="step-label">Step one</div>
-        <div class="phone-step">
-          <img src="assets/screenshots/home.png" alt="Search screen with location and date filters" loading="lazy">
-        </div>
-        <h3>Search your area</h3>
-        <p>Enter your zip or use current location. Filter by today, this weekend, or all upcoming.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-label">Step two</div>
-        <div class="phone-step">
-          <img src="assets/screenshots/map-popup.png" alt="Map with sale preview popup" loading="lazy">
-        </div>
-        <h3>Browse and plan</h3>
-        <p>Photos, hours, payment methods, and distance — all before you leave the house.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-label">Step three</div>
-        <div class="phone-step">
-          <img src="assets/screenshots/detail.png" alt="Sale detail page with directions button" loading="lazy">
-        </div>
-        <h3>Go</h3>
-        <p>One tap to get directions from the detail page. Your saved list rides along.</p>
       </div>
 
     </div>
