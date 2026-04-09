@@ -50,3 +50,6 @@ scraper/venv/
 __pycache__/
 *.pyc
 *.pyo
+
+# Supabase CLI temp
+supabase/.temp/

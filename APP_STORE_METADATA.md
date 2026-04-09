@@ -39,6 +39,9 @@ Secondary: Lifestyle
 ## What's New (v1.0)
 Welcome to Estate Helper! Find estate sales near you, browse photos, save your favorites, and get directions — all in one app.
 
+## What's New (v1.1)
+Performance optimizations for faster loading of estate sale listings. UI refinements to improve navigation and user experience. Bug fixes for inventory display issues reported during beta testing. Stability improvements to reduce crashes and improve reliability.
+
 ## Age Rating
 4+ (no objectionable content)
 
