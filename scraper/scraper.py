@@ -373,7 +373,7 @@ def upsert_sale(sale: dict) -> Optional[str]:
             'p_longitude':    sale['longitude'],
             'p_start_date':   sale.get('start_date'),
             'p_end_date':     sale.get('end_date'),
-            'p_description':  sale.get('description') or '',
+            'p_description':  sale.get('description') or None,
             'p_url':          sale['url'],
             'p_terms':        sale.get('terms'),
             'p_sale_hours':   sale.get('sale_hours'),
@@ -413,11 +413,11 @@ def compute_api_hash(data: dict) -> str:
 
 
 def get_existing_sale(external_id: str) -> Optional[dict]:
-    """Return stored api_hash, detail_scraped_at, and description for a sale, or None if not found."""
+    """Return stored api_hash, detail_scraped_at, description, and terms for a sale, or None if not found."""
     try:
         result = (
             supabase.table('sales')
-            .select('id,api_hash,detail_scraped_at,description')
+            .select('id,api_hash,detail_scraped_at,description,terms')
             .eq('external_id', external_id)
             .maybe_single()
             .execute()
@@ -456,7 +456,10 @@ def needs_detail_scrape(existing: Optional[dict], current_hash: str) -> bool:
     if not existing.get('description'):
         return True
 
-    scraped_at = datetime.fromisoformat(scraped_at_str.replace('Z', '+00:00'))
+    # Python 3.9 fromisoformat only handles 0/3/6 fractional digits — normalize to 6
+    cleaned = scraped_at_str.replace('Z', '+00:00')
+    normalized = re.sub(r'\.(\d+)', lambda m: '.' + m.group(1)[:6].ljust(6, '0'), cleaned)
+    scraped_at = datetime.fromisoformat(normalized)
     age = datetime.now(timezone.utc) - scraped_at
     return age > timedelta(days=RESCRAPE_DAYS)
 
@@ -521,6 +524,11 @@ def run(grid_points: list[tuple[float, float]] = COLORADO_POINTS):
                 if detail.get('images'):
                     sale['images'] = detail['images']
             else:
+                # Preserve existing description/terms — don't overwrite with empty.
+                # API-level fields (address, coords, hours) still get upserted.
+                if existing:
+                    sale['description'] = existing.get('description') or None
+                    sale['terms'] = existing.get('terms') or None
                 total_skipped += 1
 
             if not sale.get('latitude') or not sale.get('longitude'):
@@ -565,8 +573,9 @@ if __name__ == '__main__':
     if args.point:
         try:
             lat, lng = map(float, args.point.split(','))
-            run([(lat, lng)])
         except ValueError:
             print('Error: use --point LAT,LNG, e.g. --point 39.74,-104.99')
+        else:
+            run([(lat, lng)])
     else:
         run()
