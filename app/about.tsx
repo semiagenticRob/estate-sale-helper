@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { colors, fonts, fontSize, spacing, radii } from '../lib/theme';
 
 export default function AboutScreen() {
@@ -11,7 +12,7 @@ export default function AboutScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.appName}>Estate Helper</Text>
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version {Constants.expoConfig?.version ?? '1.0.0'}</Text>
         <Text style={styles.tagline}>Find estate sales near you</Text>
       </View>
 
