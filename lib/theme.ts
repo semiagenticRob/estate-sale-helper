@@ -31,6 +31,12 @@ export const colors = {
   borderGold: '#C4A882',
   backgroundWarm: '#F5EFE8',
 
+  // Heat map pins (cold-to-hot temperature scale)
+  heatCold: '#5B8FA8',       // blue — skip-dominant
+  heatCool: '#89B4C8',       // light blue — mixed reception
+  heatWarm: '#D4A04A',       // amber — leaning worth it
+  heatHot: '#C0503A',        // red — strong worth-it consensus
+
   // Status
   statusActive: '#5A8A60',
   statusUpcoming: '#5070A0',

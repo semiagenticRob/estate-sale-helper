@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { ImageGallery } from '../../components/ImageGallery';
-import { SaleMap } from '../../components/SaleMap';
+import { WorthTheDriveModal } from '../../components/WorthTheDriveBanner';
+import { ReviewAggregateCard } from '../../components/ReviewAggregateCard';
 import { useSavedSales } from '../../hooks/useSavedSales';
+import { useGeofence } from '../../hooks/useGeofence';
+import { useSignal } from '../../hooks/useSignal';
 import { getSaleById } from '../../lib/salesApi';
+import { getSaleScore, getReviewAggregate, submitReview } from '../../lib/communityApi';
+import { saveVisit, markReviewed, hasReviewed as checkHasReviewed } from '../../lib/geofenceTracker';
 import { getLastSearch } from '../../lib/searchState';
-import { Sale } from '../../types';
+import { Sale, SaleScore, ReviewAggregate } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { detectPaymentTypes } from '../../lib/paymentTypes';
 import { colors, fonts, fontSize, spacing, radii, shadows } from '../../lib/theme';
@@ -32,6 +37,17 @@ export default function SaleDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Community state
+  const [score, setScore] = useState<SaleScore | null>(null);
+  const [aggregate, setAggregate] = useState<ReviewAggregate | null>(null);
+  const [aggLoading, setAggLoading] = useState(true);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [alreadyReviewed, setAlreadyReviewed] = useState(true); // start hidden until check completes
+  const [reviewCheckDone, setReviewCheckDone] = useState(false);
+
+  const geofence = useGeofence(sale?.latitude, sale?.longitude);
+  const signal = useSignal(sale?.id);
+
   const fetchSale = () => {
     if (!id) return;
     setLoading(true);
@@ -45,6 +61,36 @@ export default function SaleDetailScreen() {
   useEffect(() => {
     fetchSale();
   }, [id]);
+
+  // Fetch community data after sale loads
+  const refreshCommunityData = useCallback(() => {
+    if (!sale?.id) return;
+    setAggLoading(true);
+    Promise.all([
+      getSaleScore(sale.id).then(setScore).catch(() => {}),
+      getReviewAggregate(sale.id).then(setAggregate).catch(() => {}),
+    ]).finally(() => setAggLoading(false));
+  }, [sale?.id]);
+
+  useEffect(() => {
+    refreshCommunityData();
+  }, [refreshCommunityData]);
+
+  // Track geofence visit + check if already reviewed
+  useEffect(() => {
+    if (!sale || geofence.loading) return;
+    if (geofence.withinRange) {
+      saveVisit(sale.id, sale.title, sale.latitude, sale.longitude);
+      checkHasReviewed(sale.id).then((reviewed) => {
+        setAlreadyReviewed(reviewed);
+        setReviewCheckDone(true);
+      });
+    } else {
+      setAlreadyReviewed(true); // not in range, keep hidden
+      setReviewCheckDone(true);
+    }
+  }, [sale?.id, geofence.withinRange, geofence.loading]);
+
 
   if (loading) {
     return (
@@ -87,6 +133,17 @@ export default function SaleDetailScreen() {
   };
 
   const saved = isSaved(sale.id);
+
+  const handleSignal = async (type: 'worth_it' | 'skip_it') => {
+    await signal.submit(type, geofence.userLat, geofence.userLng);
+    // Refresh score after signal
+    getSaleScore(sale.id).then(setScore).catch(() => {});
+  };
+
+  const handleReview = async (pricing: boolean, quality: boolean, accuracy: boolean, availability: boolean) => {
+    await submitReview(sale.id, geofence.userLat, geofence.userLng, pricing, quality, accuracy, availability);
+    refreshCommunityData();
+  };
 
   return (
     <View style={styles.container}>
@@ -147,21 +204,19 @@ export default function SaleDetailScreen() {
             })()}
           </View>
 
-          {/* Action Buttons */}
+          {/* Community Reviews */}
+          <ReviewAggregateCard
+            aggregate={aggregate}
+            loading={aggLoading}
+            canReview={geofence.withinRange && !geofence.loading && !alreadyReviewed}
+            onLeaveReview={() => setShowRatingModal(true)}
+          />
+
+          {/* Get Directions */}
           <View style={styles.actions}>
             <Pressable style={styles.actionBtn} onPress={handleGetDirections}>
               <Text style={styles.actionBtnText}>Get Directions</Text>
             </Pressable>
-            {sale.url && (
-              <Pressable
-                style={[styles.actionBtn, styles.actionBtnSecondary]}
-                onPress={handleViewOriginal}
-              >
-                <Text style={[styles.actionBtnText, styles.actionBtnTextSecondary]}>
-                  View on EstateSales.net
-                </Text>
-              </Pressable>
-            )}
           </View>
 
           {/* Description */}
@@ -171,12 +226,6 @@ export default function SaleDetailScreen() {
               <Text style={styles.description}>{sale.description}</Text>
             </View>
           ) : null}
-
-          {/* Map */}
-          <View style={styles.mapSection}>
-            <Text style={styles.sectionTitle}>Location</Text>
-            <SaleMap latitude={sale.latitude} longitude={sale.longitude} />
-          </View>
 
           {/* Images Grid */}
           {sale.images.length > 0 && (
@@ -196,8 +245,61 @@ export default function SaleDetailScreen() {
               </View>
             </View>
           )}
+
+          {/* View on EstateSales.net */}
+          {sale.url && (
+            <Pressable
+              style={[styles.actionBtn, styles.actionBtnSecondary, { marginBottom: spacing.xxl }]}
+              onPress={handleViewOriginal}
+            >
+              <Text style={[styles.actionBtnText, styles.actionBtnTextSecondary]}>
+                View on EstateSales.net
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
+
+      {/* Prominent banner when at the sale */}
+      {geofence.withinRange && !geofence.loading && reviewCheckDone && !alreadyReviewed && !showRatingModal && (
+        <Pressable style={styles.passiveBanner} onPress={() => setShowRatingModal(true)}>
+          <View style={styles.passiveBannerContent}>
+            <Text style={styles.passiveBannerTitle}>You're here</Text>
+            <Text style={styles.passiveBannerText}>
+              Rate this sale when you're ready
+            </Text>
+          </View>
+          <View style={styles.passiveBannerBtn}>
+            <Text style={styles.passiveBannerBtnText}>Rate Now</Text>
+          </View>
+        </Pressable>
+      )}
+
+      {/* Worth the Drive + Review modal */}
+      <WorthTheDriveModal
+        visible={showRatingModal}
+        onClose={() => {
+          setShowRatingModal(false);
+          refreshCommunityData();
+        }}
+        onSignal={async (type) => {
+          await handleSignal(type);
+          if (sale) {
+            markReviewed(sale.id);
+            setAlreadyReviewed(true);
+          }
+        }}
+        onReview={async (p, q, a, av) => {
+          await handleReview(p, q, a, av);
+          if (sale) {
+            markReviewed(sale.id);
+            setAlreadyReviewed(true);
+          }
+        }}
+        currentSignal={signal.currentSignal}
+        submitting={signal.state === 'submitting'}
+        score={score}
+      />
 
       {/* Footer Tab Bar */}
       <View style={[styles.tabBar, { paddingBottom: insets.bottom || 10 }]}>
@@ -399,9 +501,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 26,
   },
-  mapSection: {
-    marginBottom: spacing.xxl,
-  },
   imagesSection: {
     marginBottom: spacing.xxl,
   },
@@ -420,6 +519,42 @@ const styles = StyleSheet.create({
   gridImage: {
     width: '100%',
     height: '100%',
+  },
+  passiveBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#C4982A',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    gap: spacing.md,
+  },
+  passiveBannerContent: {
+    flex: 1,
+  },
+  passiveBannerTitle: {
+    fontSize: fontSize.displaySmall,
+    fontFamily: fonts.display,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  passiveBannerText: {
+    fontSize: fontSize.bodySmall,
+    fontFamily: fonts.uiSans,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  passiveBannerBtn: {
+    backgroundColor: '#fff',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.base,
+    borderRadius: radii.button,
+  },
+  passiveBannerBtnText: {
+    fontSize: fontSize.body,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '700',
+    color: '#C4982A',
   },
   tabBar: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import React, { useRef, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
-import { SearchResult } from '../types';
+import { SearchResult, SaleScore } from '../types';
 import { colors } from '../lib/theme';
 import { formatDateRange } from '../lib/dates';
 
@@ -13,31 +13,50 @@ interface ResultsMapProps {
   onSalePress: (saleId: string) => void;
   isSaved: (saleId: string) => boolean;
   onToggleSave: (saleId: string) => void;
+  scores?: Map<string, SaleScore>;
+}
+
+function getPinStyle(score: SaleScore | undefined): { color: string; size: number } {
+  if (!score || (score.worthItCount + score.skipItCount) === 0) {
+    return { color: colors.accentPrimary, size: 32 };
+  }
+  const h = score.heatScore;
+  if (h < 0.35) return { color: colors.heatCold, size: 32 };
+  if (h < 0.55) return { color: colors.heatCool, size: 32 };
+  if (h < 0.75) return { color: colors.heatWarm, size: 32 };
+  return { color: colors.heatHot, size: 36 };
 }
 
 function buildMapHtml(
   results: SearchResult[],
   centerLat: number,
   centerLng: number,
+  scores?: Map<string, SaleScore>,
 ): string {
   const markers = JSON.stringify(
     results
       .filter((r) => r.latitude && r.longitude)
       .slice(0, 150)
-      .map((r) => ({
-        id: r.id,
-        lat: r.latitude,
-        lng: r.longitude,
-        title: r.title || 'Estate Sale',
-        city: r.city || '',
-        state: r.state || '',
-        distance: r.distanceMiles,
-        company: r.companyName || '',
-        imageUrl: r.headerImageUrl || r.images?.[0]?.imageUrl || '',
-        startDate: r.startDate,
-        endDate: r.endDate,
-        dateRange: formatDateRange(r.startDate, r.endDate),
-      }))
+      .map((r) => {
+        const score = scores?.get(r.id);
+        const pin = getPinStyle(score);
+        return {
+          id: r.id,
+          lat: r.latitude,
+          lng: r.longitude,
+          title: r.title || 'Estate Sale',
+          city: r.city || '',
+          state: r.state || '',
+          distance: r.distanceMiles,
+          company: r.companyName || '',
+          imageUrl: r.headerImageUrl || r.images?.[0]?.imageUrl || '',
+          startDate: r.startDate,
+          endDate: r.endDate,
+          dateRange: formatDateRange(r.startDate, r.endDate),
+          pinColor: pin.color,
+          pinSize: pin.size,
+        };
+      })
   );
 
   return `<!DOCTYPE html>
@@ -130,24 +149,10 @@ function buildMapHtml(
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
     iconCreateFunction: function(cluster) {
-      var children = cluster.getAllChildMarkers();
-      var total = children.length;
-      var activeCount = children.filter(function(m) { return m.options.isActive; }).length;
+      var total = cluster.getAllChildMarkers().length;
       var size = total < 10 ? 40 : total < 100 ? 50 : 60;
       var fontSize = size * 0.35;
-      var html;
-      if (activeCount === total) {
-        html = '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:${colors.statusActive};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;font-weight:600;color:#fff;font-size:'+fontSize+'px">'+total+'</div>';
-      } else if (activeCount === 0) {
-        html = '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:${colors.accentPrimary};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;font-weight:600;color:#fff;font-size:'+fontSize+'px">'+total+'</div>';
-      } else {
-        html = '<svg width="'+size+'" height="'+size+'" viewBox="0 0 40 40" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">' +
-          '<path d="M20,2 A18,18 0 0,0 20,38 Z" fill="${colors.statusActive}"/>' +
-          '<path d="M20,2 A18,18 0 0,1 20,38 Z" fill="${colors.accentPrimary}"/>' +
-          '<circle cx="20" cy="20" r="18" fill="none" stroke="white" stroke-width="2.5"/>' +
-          '<text x="20" y="25" text-anchor="middle" font-size="'+fontSize+'" font-weight="600" font-family="-apple-system,sans-serif" fill="white">'+total+'</text>' +
-          '</svg>';
-      }
+      var html = '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:${colors.accentPrimary};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;font-weight:600;color:#fff;font-size:'+fontSize+'px">'+total+'</div>';
       return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size/2, size/2] });
     }
   });
@@ -155,16 +160,13 @@ function buildMapHtml(
   var bounds = [];
 
   markers.forEach(function(m) {
-    var today = new Date(); today.setHours(0,0,0,0);
-    var start = new Date(m.startDate); start.setHours(0,0,0,0);
-    var end = new Date(m.endDate); end.setHours(0,0,0,0);
-    var isActive = today >= start && today <= end;
+    var s = m.pinSize || 32;
     var icon = L.divIcon({
       className: '',
-      html: '<div class="sale-marker' + (isActive ? ' active' : '') + '"><span class="sale-marker-inner">★</span></div>',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -34]
+      html: '<div class="sale-marker" style="background:' + m.pinColor + ';width:' + s + 'px;height:' + s + 'px"><span class="sale-marker-inner">★</span></div>',
+      iconSize: [s, s],
+      iconAnchor: [s/2, s],
+      popupAnchor: [0, -s - 2]
     });
 
     var loc = (m.city || '') + ', ' + (m.state || '') + (m.distance > 0 ? ' · ' + m.distance + ' mi' : '');
@@ -185,7 +187,7 @@ function buildMapHtml(
         '</div>'
       );
 
-    var marker = L.marker([m.lat, m.lng], { icon: icon, isActive: isActive }).bindPopup(popup);
+    var marker = L.marker([m.lat, m.lng], { icon: icon }).bindPopup(popup);
     cluster.addLayer(marker);
     bounds.push([m.lat, m.lng]);
   });
@@ -213,6 +215,7 @@ export function ResultsMap({
   onSalePress,
   isSaved,
   onToggleSave,
+  scores,
 }: ResultsMapProps) {
   const webViewRef = useRef<WebView>(null);
   const isSavedRef = useRef(isSaved);
@@ -254,8 +257,8 @@ export function ResultsMap({
   );
 
   const html = useMemo(
-    () => buildMapHtml(results, centerLat, centerLng),
-    [results, centerLat, centerLng]
+    () => buildMapHtml(results, centerLat, centerLng, scores),
+    [results, centerLat, centerLng, scores]
   );
 
   return (

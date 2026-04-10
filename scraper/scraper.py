@@ -109,11 +109,35 @@ GRID_POINTS: list[tuple[float, float]] = [
     (21.31, -157.86),   # Honolulu
 ]
 
-# Single point covers all of Colorado (250-mile radius from Denver reaches
-# every corner of the state). Swap run()'s default to GRID_POINTS for
-# a full national run.
-COLORADO_POINTS: list[tuple[float, float]] = [
-    (39.74, -104.99),   # Denver — covers all of CO
+# ─── State-by-state grid ────────────────────────────────────────────
+# Add states here as needed. Each point covers ~250mi radius.
+# Big states may need 2+ points. Add the abbreviation to ACTIVE_STATES to enable.
+STATE_GRID: dict[str, list[tuple[float, float]]] = {
+    'CO': [(39.74, -104.99)],                       # Denver
+    'TN': [(36.16, -86.78)],                        # Nashville
+    'NY': [(40.71, -74.01), (43.05, -76.15)],       # NYC + Syracuse (covers upstate)
+    # — Ready to enable —
+    # 'CA': [(37.77, -122.42), (34.05, -118.24)],   # SF + LA
+    # 'TX': [(32.78, -96.80), (29.76, -95.37)],     # Dallas + Houston
+    # 'FL': [(27.95, -82.46), (30.33, -81.66)],     # Tampa + Jacksonville
+    # 'IL': [(41.88, -87.63)],                       # Chicago
+    # 'PA': [(39.95, -75.17), (40.44, -79.99)],     # Philadelphia + Pittsburgh
+    # 'OH': [(39.96, -82.99), (39.10, -84.51)],     # Columbus + Cincinnati
+    # 'GA': [(33.75, -84.39)],                       # Atlanta
+    # 'NC': [(35.23, -80.84)],                       # Charlotte
+    # 'MI': [(42.33, -83.05)],                       # Detroit
+    # 'AZ': [(33.45, -112.07)],                      # Phoenix
+    # 'WA': [(47.61, -122.33)],                      # Seattle
+    # 'MA': [(42.36, -71.06)],                       # Boston
+    # 'MN': [(44.98, -93.27)],                       # Minneapolis
+    # 'MO': [(38.63, -90.20), (39.10, -94.58)],     # St. Louis + Kansas City
+    # 'IN': [(39.77, -86.16)],                       # Indianapolis
+}
+
+ACTIVE_STATES = ['CO', 'TN', 'NY']
+
+ACTIVE_POINTS: list[tuple[float, float]] = [
+    pt for state in ACTIVE_STATES for pt in STATE_GRID[state]
 ]
 
 
@@ -466,7 +490,7 @@ def needs_detail_scrape(existing: Optional[dict], current_hash: str) -> bool:
 
 # ─── Runner ──────────────────────────────────────────────────────────────────
 
-def run(grid_points: list[tuple[float, float]] = COLORADO_POINTS):
+def run(grid_points: list[tuple[float, float]] = ACTIVE_POINTS):
     seen_ids:        set[str] = set()
     total_discovered = 0
     total_upserted   = 0

@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SaleCard } from '../../components/SaleCard';
 import { ResultsMap } from '../../components/ResultsMap';
+import { HeatLegend } from '../../components/HeatLegend';
 import { useSavedSales } from '../../hooks/useSavedSales';
 import { searchSales } from '../../lib/salesApi';
-import { DateRange, SearchResult } from '../../types';
+import { getSaleScores } from '../../lib/communityApi';
+import { DateRange, SearchResult, SaleScore } from '../../types';
 import { colors, fonts, fontSize, spacing, radii } from '../../lib/theme';
 
-const DATE_RANGE_LABELS: Record<DateRange, string> = {
+const DATE_RANGE_LABELS: Partial<Record<DateRange, string>> = {
   today: 'Today',
   tomorrow: 'Tomorrow',
-  thisweekend: 'This Weekend',
   thisweek: 'This Week',
   all: 'All Dates',
 };
@@ -33,13 +34,16 @@ export default function ResultsScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [scores, setScores] = useState<Map<string, SaleScore>>(new Map());
   const [viewMode, setViewMode] = useState<'list' | 'map'>(
     params.viewMode === 'list' ? 'list' : 'map'
   );
+  const [dateRange, setDateRange] = useState<DateRange>(
+    (params.dateRange as DateRange) || 'today'
+  );
 
   const hasQuery = Boolean(params.query?.trim());
-  const radius = parseInt(params.radius || '25', 10);
-  const dateRange = (params.dateRange as DateRange) || 'thisweek';
+  const radius = parseInt(params.radius || '100', 10);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +59,14 @@ export default function ResultsScreen() {
       stateCode: params.statewide || undefined,
     })
       .then((data) => {
-        if (!cancelled) setResults(data);
+        if (!cancelled) {
+          setResults(data);
+          if (data.length > 0) {
+            getSaleScores(data.map((s) => s.id)).then((s) => {
+              if (!cancelled) setScores(s);
+            }).catch(() => {});
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setError('Could not load results. Please try again.');
@@ -77,7 +88,7 @@ export default function ResultsScreen() {
               {loading ? 'Searching…' : `${results.length} sale${results.length !== 1 ? 's' : ''}${hasQuery ? ` for "${params.query}"` : ''}`}
             </Text>
             <Text style={styles.headerMeta}>
-              {params.statewide ? `All sales in ${params.statewide}` : `Within ${radius} mi`} · {DATE_RANGE_LABELS[dateRange]}
+              {params.statewide ? `All sales in ${params.statewide}` : `Within ${radius} mi`}
             </Text>
           </View>
           {!loading && results.length > 0 && (
@@ -95,6 +106,28 @@ export default function ResultsScreen() {
           )}
         </View>
       </View>
+
+      {/* Date selector */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.dateChips}
+        style={styles.dateChipBar}
+      >
+        {(Object.keys(DATE_RANGE_LABELS) as DateRange[]).map((dr) => (
+          <Pressable
+            key={dr}
+            style={[styles.dateChip, dateRange === dr && styles.dateChipActive]}
+            onPress={() => setDateRange(dr)}
+          >
+            <Text style={[styles.dateChipText, dateRange === dr && styles.dateChipTextActive]}>
+              {DATE_RANGE_LABELS[dr]}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {!loading && results.length > 0 && <HeatLegend />}
 
       {loading ? (
         <View style={styles.centered}>
@@ -142,6 +175,7 @@ export default function ResultsScreen() {
           onSalePress={(id) => router.push(`/sale/${id}`)}
           isSaved={isSaved}
           onToggleSave={toggleSave}
+          scores={scores}
         />
       ) : (
         <FlatList
@@ -211,6 +245,36 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiSansMedium,
     fontWeight: '500',
     color: colors.accentPrimary,
+  },
+  dateChipBar: {
+    flexGrow: 0,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  dateChips: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  dateChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.chip,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: colors.separator,
+  },
+  dateChipActive: {
+    backgroundColor: colors.accentPrimary,
+    borderColor: colors.accentPrimary,
+  },
+  dateChipText: {
+    fontSize: fontSize.uiCaption,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  dateChipTextActive: {
+    color: colors.white,
   },
   list: {
     paddingVertical: spacing.sm,

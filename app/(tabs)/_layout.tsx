@@ -1,11 +1,64 @@
+import { useEffect, useRef, useState } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { colors, fonts } from '../../lib/theme';
-import { getLastSearch } from '../../lib/searchState';
+import { getLastSearch, setLastSearch, saveLastCoords } from '../../lib/searchState';
+import { getActiveVisit, clearVisit, hasReviewed } from '../../lib/geofenceTracker';
 
 export default function TabLayout() {
   const router = useRouter();
+  const hasAutoNavigated = useRef(false);
+
+  useEffect(() => {
+    if (hasAutoNavigated.current) return;
+
+    async function autoRoute() {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        hasAutoNavigated.current = true;
+
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const { latitude, longitude } = position.coords;
+        await saveLastCoords(latitude, longitude);
+
+        // Check for deferred review from a previous geofence visit
+        const visit = await getActiveVisit();
+        if (visit) {
+          const reviewed = await hasReviewed(visit.saleId);
+          if (!reviewed) {
+            // They have an unreviewed visit — navigate to that sale detail
+            // The exit-intercept logic will handle prompting
+            await clearVisit();
+            router.replace(`/sale/${visit.saleId}`);
+            return;
+          }
+          await clearVisit();
+        }
+
+        const params = {
+          query: '',
+          latitude: latitude.toString(),
+          longitude: longitude.toString(),
+          radius: '100',
+          dateRange: 'today',
+          viewMode: 'map',
+        };
+        setLastSearch(params);
+        router.replace({ pathname: '/results', params });
+      } catch {
+        // Fall through to search screen
+      }
+    }
+
+    autoRoute();
+  }, []);
+
   return (
     <Tabs
       screenOptions={{

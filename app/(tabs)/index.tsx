@@ -4,18 +4,17 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  ScrollView,
   Pressable,
   ActivityIndicator,
   Keyboard,
-  Image,
+  Linking,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocation } from '../../hooks/useLocation';
-import { DateFilter, DATE_RANGE_DISPLAY } from '../../components/DateFilter';
-import { DateRange } from '../../types';
-import { setLastSearch } from '../../lib/searchState';
+import { setLastSearch, saveLastCoords } from '../../lib/searchState';
 import { colors, fonts, fontSize, spacing, radii } from '../../lib/theme';
 
 interface NominatimResult {
@@ -23,74 +22,95 @@ interface NominatimResult {
   display_name: string;
   lat: string;
   lon: string;
-  address?: {
-    city?: string;
-    town?: string;
-    village?: string;
-    county?: string;
-    state?: string;
-    postcode?: string;
-  };
 }
 
-function getSuggestionLabel(r: NominatimResult): string {
-  if (r.address) {
-    const { city, town, village, county, state, postcode } = r.address;
-    const place = city || town || village || county || '';
-    if (postcode && place && state) return `${postcode}, ${place}, ${state}`;
-    if (place && state) return `${place}, ${state}`;
-  }
-  return r.display_name.split(', ').slice(0, 2).join(', ');
-}
+type ScreenMode = 'loading' | 'onboarding' | 'search';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const location = useLocation();
-  const [dateRange, setDateRange] = useState<DateRange>('thisweekend');
-  const [locationQuery, setLocationQuery] = useState('');
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [mode, setMode] = useState<ScreenMode>('loading');
+  const [requesting, setRequesting] = useState(false);
+  const [denied, setDenied] = useState(false);
+
+  // Search state
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
-  const [resolvedCoords, setResolvedCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
-  const [isEditingLocation, setIsEditingLocation] = useState(false);
-  const hasPopulated = useRef(false);
+  const [fetching, setFetching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!location.loading && !hasPopulated.current) {
-      hasPopulated.current = true;
-      if (!location.error) {
-        setLocationQuery(location.city);
-        setResolvedCoords({ lat: location.latitude, lng: location.longitude });
-      }
-    }
-  }, [location.loading, location.error, location.city, location.latitude, location.longitude]);
+    checkPermission();
+  }, []);
 
-  const fetchSuggestions = async (text: string) => {
-    if (text.length < 2) {
-      setSuggestions([]);
-      return;
+  async function checkPermission() {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        // Permission already granted — auto-navigate handled by _layout
+        // Show search as fallback in case layout redirect doesn't fire
+        setMode('search');
+      } else if (status === 'denied') {
+        setDenied(true);
+        setMode('search');
+      } else {
+        setMode('onboarding');
+      }
+    } catch {
+      setMode('search');
     }
-    setIsFetchingSuggestions(true);
+  }
+
+  async function handleShareLocation() {
+    setRequesting(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const { latitude, longitude } = position.coords;
+        await saveLastCoords(latitude, longitude);
+
+        const params = {
+          query: '',
+          latitude: latitude.toString(),
+          longitude: longitude.toString(),
+          radius: '100',
+          dateRange: 'today',
+          viewMode: 'map',
+        };
+        setLastSearch(params);
+        router.replace({ pathname: '/results', params });
+      } else {
+        setDenied(true);
+        setMode('search');
+      }
+    } catch {
+      setMode('search');
+    } finally {
+      setRequesting(false);
+    }
+  }
+
+  // Nominatim search
+  const fetchSuggestions = async (text: string) => {
+    if (text.length < 2) { setSuggestions([]); return; }
+    setFetching(true);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=5&countrycodes=us&addressdetails=1`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=5&countrycodes=us`,
         { headers: { 'User-Agent': 'EstateSaleHelper/1.0' } }
       );
-      const data: NominatimResult[] = await res.json();
-      setSuggestions(data);
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setIsFetchingSuggestions(false);
-    }
+      setSuggestions(await res.json());
+    } catch { setSuggestions([]); }
+    finally { setFetching(false); }
   };
 
-  const handleLocationChange = (text: string) => {
-    setLocationQuery(text);
-    setLocationError(null);
-    setResolvedCoords(null);
-
+  const handleQueryChange = (text: string) => {
+    setQuery(text);
+    setSearchError(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (text.length >= 2) {
       debounceRef.current = setTimeout(() => fetchSuggestions(text), 400);
@@ -99,276 +119,322 @@ export default function HomeScreen() {
     }
   };
 
-  const selectSuggestion = (item: NominatimResult) => {
-    setLocationQuery(getSuggestionLabel(item));
-    setResolvedCoords({ lat: parseFloat(item.lat), lng: parseFloat(item.lon) });
+  const handleSelectSuggestion = (item: NominatimResult) => {
     setSuggestions([]);
-    setIsEditingLocation(false);
     Keyboard.dismiss();
+    navigateToMap(parseFloat(item.lat), parseFloat(item.lon));
   };
 
   const handleSearch = async () => {
-    setLocationError(null);
-    setSuggestions([]);
-
-    const isStatewide = !locationQuery.trim();
-
-    let lat: number;
-    let lng: number;
-    let searchRadius: number;
-    let stateLabel = '';
-
-    if (isStatewide) {
-      if (resolvedCoords) {
-        lat = resolvedCoords.lat;
-        lng = resolvedCoords.lng;
-      } else if (!location.loading && !location.error) {
-        lat = location.latitude;
-        lng = location.longitude;
-      } else {
-        lat = location.latitude;
-        lng = location.longitude;
-      }
-      searchRadius = 500;
-      const parts = location.city.split(',').map((s) => s.trim());
-      stateLabel = parts.length > 1 ? parts[parts.length - 1] : '';
-    } else if (resolvedCoords) {
-      lat = resolvedCoords.lat;
-      lng = resolvedCoords.lng;
-      searchRadius = 100;
-    } else {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery.trim())}&format=json&limit=1&countrycodes=us`,
-          { headers: { 'User-Agent': 'EstateSaleHelper/1.0' } }
-        );
-        const data: NominatimResult[] = await res.json();
-        if (!data || data.length === 0) {
-          setLocationError('Location not found. Try selecting a suggestion from the list.');
-          return;
-        }
-        lat = parseFloat(data[0].lat);
-        lng = parseFloat(data[0].lon);
-      } catch {
-        setLocationError('Could not find that location. Please try again.');
+    if (!query.trim()) { setSearchError('Enter a city or zip code'); return; }
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query.trim())}&format=json&limit=1&countrycodes=us`,
+        { headers: { 'User-Agent': 'EstateSaleHelper/1.0' } }
+      );
+      const data: NominatimResult[] = await res.json();
+      if (!data || data.length === 0) {
+        setSearchError('Location not found. Try a different city or zip code.');
         return;
       }
-      searchRadius = 100;
+      navigateToMap(parseFloat(data[0].lat), parseFloat(data[0].lon));
+    } catch {
+      setSearchError('Could not search. Check your connection.');
+    } finally {
+      setSearching(false);
     }
+  };
 
+  function navigateToMap(lat: number, lng: number) {
     const params = {
       query: '',
       latitude: lat.toString(),
       longitude: lng.toString(),
-      radius: searchRadius.toString(),
-      dateRange,
-      ...(isStatewide && stateLabel ? { statewide: stateLabel } : {}),
+      radius: '100',
+      dateRange: 'today',
+      viewMode: 'map',
     };
     setLastSearch(params);
     router.push({ pathname: '/results', params });
-  };
+  }
 
-  const buttonLabel = `Show sales ${DATE_RANGE_DISPLAY[dateRange]}`;
+  // ─── Loading ───────────────────────────────────────────────
+  if (mode === 'loading') {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.accentPrimary} />
+      </View>
+    );
+  }
 
-  return (
-    <View style={styles.wrapper}>
-      {/* Mascot overlapping header */}
-      <View style={styles.mascotContainer}>
+  // ─── Onboarding (first launch) ─────────────────────────────
+  if (mode === 'onboarding') {
+    return (
+      <View style={styles.onboarding}>
         <Image
           source={require('../../assets/dodo-mascot.png')}
-          style={styles.mascotImage}
-          resizeMode="cover"
+          style={styles.grandmaImage}
+          contentFit="contain"
         />
+        <Text style={styles.onboardTitle}>Find quality estate sales near you</Text>
+        <Text style={styles.onboardSubtitle}>
+          Share your location to discover sales nearby and help other attendees with reviews
+        </Text>
+        <Pressable
+          style={styles.shareBtn}
+          onPress={handleShareLocation}
+          disabled={requesting}
+        >
+          {requesting ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.shareBtnText}>Share Location</Text>
+          )}
+        </Pressable>
+        <Pressable onPress={() => setMode('search')} style={styles.skipLink}>
+          <Text style={styles.skipText}>Search by city instead</Text>
+        </Pressable>
       </View>
+    );
+  }
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-      {/* Location Row */}
-      <View style={styles.locationSection}>
-        <Text style={styles.sectionLabel}>WHERE?</Text>
-        {isEditingLocation ? (
-          <>
-            <View style={styles.locationInputRow}>
-              <TextInput
-                style={styles.locationInput}
-                placeholder="City, state or zip code"
-                placeholderTextColor={colors.placeholder}
-                value={locationQuery}
-                onChangeText={handleLocationChange}
-                autoFocus
-                returnKeyType="done"
-                autoCorrect={false}
-                onBlur={() => {
-                  if (locationQuery.trim()) setIsEditingLocation(false);
-                }}
-              />
-              {isFetchingSuggestions && (
-                <ActivityIndicator size="small" color={colors.textSecondary} />
-              )}
-            </View>
-            {suggestions.length > 0 && (
-              <View style={styles.suggestionsContainer}>
-                {suggestions.map((item, index) => (
-                  <Pressable
-                    key={item.place_id}
-                    style={[
-                      styles.suggestionRow,
-                      index < suggestions.length - 1 && styles.suggestionBorder,
-                    ]}
-                    onPress={() => selectSuggestion(item)}
-                  >
-                    <Text style={styles.suggestionText}>{getSuggestionLabel(item)}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-            {locationError && <Text style={styles.locationError}>{locationError}</Text>}
-          </>
-        ) : (
-          <Pressable style={styles.locationDisplay} onPress={() => setIsEditingLocation(true)}>
-            {location.loading ? (
-              <ActivityIndicator size="small" color={colors.accentPrimary} />
-            ) : (
-              <>
-                <Ionicons name="location-sharp" size={14} color={colors.buttonSelected} />
-                <Text style={styles.locationText}>
-                  {locationQuery || 'Tap to set location'}
-                </Text>
-                <Text style={styles.locationHint}>{'\u00B7'} tap to change</Text>
-              </>
-            )}
+  // ─── Search (minimal, also fallback for denied) ────────────
+  return (
+    <View style={styles.searchContainer}>
+      {denied && (
+        <View style={styles.deniedBanner}>
+          <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+          <Text style={styles.deniedText}>
+            Enable location to help other attendees with reviews
+          </Text>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS === 'ios') Linking.openURL('app-settings:');
+              else Linking.openSettings();
+            }}
+          >
+            <Text style={styles.deniedLink}>Settings</Text>
           </Pressable>
-        )}
+        </View>
+      )}
+
+      <Image
+        source={require('../../assets/dodo-mascot.png')}
+        style={styles.searchImage}
+        contentFit="contain"
+      />
+
+      <Text style={styles.searchTitle}>Find Estate Sales</Text>
+
+      <View style={styles.inputRow}>
+        <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="City name or Zip code"
+          placeholderTextColor={colors.placeholder}
+          value={query}
+          onChangeText={handleQueryChange}
+          returnKeyType="search"
+          onSubmitEditing={handleSearch}
+          autoCorrect={false}
+        />
+        {fetching && <ActivityIndicator size="small" color={colors.textSecondary} />}
       </View>
 
-      {/* Date Filter */}
-      <DateFilter selected={dateRange} onSelect={setDateRange} />
+      {suggestions.length > 0 && (
+        <View style={styles.suggestionsBox}>
+          {suggestions.map((item, i) => (
+            <Pressable
+              key={item.place_id}
+              style={[styles.suggestionRow, i < suggestions.length - 1 && styles.suggestionBorder]}
+              onPress={() => handleSelectSuggestion(item)}
+            >
+              <Text style={styles.suggestionText} numberOfLines={1}>
+                {item.display_name.split(', ').slice(0, 3).join(', ')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
-      {/* Search Button */}
-      <Pressable style={styles.searchButton} onPress={handleSearch}>
-        <Text style={styles.searchButtonText}>{buttonLabel}</Text>
+      {searchError && <Text style={styles.errorText}>{searchError}</Text>}
+
+      <Pressable
+        style={[styles.searchBtn, searching && { opacity: 0.7 }]}
+        onPress={handleSearch}
+        disabled={searching}
+      >
+        {searching ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={styles.searchBtnText}>Search</Text>
+        )}
       </Pressable>
-    </ScrollView>
     </View>
   );
 }
 
-const MASCOT_SIZE = 72;
-
 const styles = StyleSheet.create({
-  wrapper: {
+  centered: {
     flex: 1,
-    backgroundColor: colors.backgroundWarm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundPrimary,
   },
-  mascotContainer: {
-    position: 'absolute',
-    top: -MASCOT_SIZE / 2,
-    left: spacing.lg,
-    width: MASCOT_SIZE,
-    height: MASCOT_SIZE,
-    borderRadius: MASCOT_SIZE / 2,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: colors.borderGold,
-    overflow: 'hidden',
-    zIndex: 10,
+
+  // Onboarding
+  onboarding: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mascotImage: {
-    width: MASCOT_SIZE - 4,
-    height: MASCOT_SIZE - 4,
-    borderRadius: (MASCOT_SIZE - 4) / 2,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
     padding: spacing.lg,
-    paddingTop: MASCOT_SIZE / 2 + 12,
   },
-  sectionLabel: {
-    fontSize: 16,
-    fontFamily: fonts.uiSansMedium,
-    fontWeight: '700',
-    color: colors.textDark,
-    marginBottom: 10,
-    letterSpacing: 0.8,
+  grandmaImage: {
+    width: 200,
+    height: 300,
+    marginBottom: spacing.xl,
   },
-  locationSection: {
-    marginBottom: 28,
+  onboardTitle: {
+    fontSize: fontSize.displayMedium,
+    fontFamily: fonts.display,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
-  locationDisplay: {
-    flexDirection: 'row',
+  onboardSubtitle: {
+    fontSize: fontSize.bodySmall,
+    fontFamily: fonts.uiSans,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+  },
+  shareBtn: {
+    backgroundColor: colors.accentPrimary,
+    height: 52,
+    borderRadius: radii.button,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    width: '100%',
   },
-  locationText: {
-    fontSize: 15,
+  shareBtnText: {
+    color: colors.white,
+    fontSize: fontSize.uiButton,
     fontFamily: fonts.uiSansMedium,
     fontWeight: '600',
-    color: colors.textDark,
   },
-  locationHint: {
-    fontSize: 13,
+  skipLink: {
+    marginTop: spacing.base,
+    padding: spacing.sm,
+  },
+  skipText: {
+    fontSize: fontSize.uiCaption,
     fontFamily: fonts.uiSans,
-    color: colors.buttonSelected,
+    color: colors.accentPrimary,
   },
-  locationInputRow: {
+
+  // Search
+  searchContainer: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+  },
+  deniedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    borderWidth: 0.5,
-    borderColor: colors.borderGold,
+    gap: spacing.sm,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: radii.small,
-    paddingHorizontal: 12,
-    height: 44,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  locationInput: {
+  deniedText: {
     flex: 1,
-    fontSize: 15,
-    color: colors.textDark,
+    fontSize: fontSize.uiLabel,
     fontFamily: fonts.uiSans,
+    color: colors.textSecondary,
   },
-  suggestionsContainer: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 0.5,
-    borderColor: colors.borderGold,
+  deniedLink: {
+    fontSize: fontSize.uiLabel,
+    fontFamily: fonts.uiSansMedium,
+    fontWeight: '500',
+    color: colors.accentPrimary,
+  },
+  searchImage: {
+    width: 120,
+    height: 180,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  searchTitle: {
+    fontSize: fontSize.displayMedium,
+    fontFamily: fonts.display,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: radii.input,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    paddingHorizontal: spacing.md,
+    height: 52,
+    marginBottom: spacing.sm,
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: fontSize.body,
+    fontFamily: fonts.uiSans,
+    color: colors.textPrimary,
+  },
+  suggestionsBox: {
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: radii.small,
-    marginTop: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    marginBottom: spacing.sm,
     overflow: 'hidden',
   },
   suggestionRow: {
     paddingVertical: spacing.md,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
   },
   suggestionBorder: {
     borderBottomWidth: 0.5,
-    borderBottomColor: colors.borderGold,
+    borderBottomColor: colors.separator,
   },
   suggestionText: {
-    fontSize: 15,
-    color: colors.textDark,
+    fontSize: fontSize.bodySmall,
     fontFamily: fonts.uiSans,
+    color: colors.textPrimary,
   },
-  locationError: {
+  errorText: {
     fontSize: fontSize.uiLabel,
+    fontFamily: fonts.uiSans,
     color: colors.destructive,
-    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  searchButton: {
-    backgroundColor: colors.buttonSelected,
-    borderRadius: 12,
-    paddingVertical: 14,
+  searchBtn: {
+    backgroundColor: colors.accentPrimary,
+    height: 52,
+    borderRadius: radii.button,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  searchBtnText: {
+    color: colors.white,
+    fontSize: fontSize.uiButton,
     fontFamily: fonts.uiSansMedium,
     fontWeight: '600',
   },

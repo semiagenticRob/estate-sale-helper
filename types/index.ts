@@ -47,3 +47,26 @@ export interface SavedSale {
   savedAt: string;
   remindAt?: string;
 }
+
+// ─── Community: Signals & Reviews ─────────────────────────────────
+
+export type SignalType = 'worth_it' | 'skip_it';
+
+export interface SaleScore {
+  saleId: string;
+  worthItCount: number;
+  skipItCount: number;
+  heatScore: number; // 0-1, worth_it / (worth_it + skip_it) with decay
+}
+
+export interface ReviewAggregate {
+  saleId: string;
+  pricingPos: number;
+  pricingTotal: number;
+  qualityPos: number;
+  qualityTotal: number;
+  accuracyPos: number;
+  accuracyTotal: number;
+  availabilityPos: number;
+  availabilityTotal: number;
+}
