@@ -116,11 +116,11 @@ STATE_GRID: dict[str, list[tuple[float, float]]] = {
     'CO': [(39.74, -104.99)],                       # Denver
     'TN': [(36.16, -86.78)],                        # Nashville
     'NY': [(40.71, -74.01), (43.05, -76.15)],       # NYC + Syracuse (covers upstate)
+    'IL': [(41.88, -87.63)],                        # Chicago
     # — Ready to enable —
     # 'CA': [(37.77, -122.42), (34.05, -118.24)],   # SF + LA
     # 'TX': [(32.78, -96.80), (29.76, -95.37)],     # Dallas + Houston
     # 'FL': [(27.95, -82.46), (30.33, -81.66)],     # Tampa + Jacksonville
-    # 'IL': [(41.88, -87.63)],                       # Chicago
     # 'PA': [(39.95, -75.17), (40.44, -79.99)],     # Philadelphia + Pittsburgh
     # 'OH': [(39.96, -82.99), (39.10, -84.51)],     # Columbus + Cincinnati
     # 'GA': [(33.75, -84.39)],                       # Atlanta
@@ -134,7 +134,7 @@ STATE_GRID: dict[str, list[tuple[float, float]]] = {
     # 'IN': [(39.77, -86.16)],                       # Indianapolis
 }
 
-ACTIVE_STATES = ['CO', 'TN', 'NY']
+ACTIVE_STATES = ['CO', 'TN', 'NY', 'IL']
 
 ACTIVE_POINTS: list[tuple[float, float]] = [
     pt for state in ACTIVE_STATES for pt in STATE_GRID[state]
