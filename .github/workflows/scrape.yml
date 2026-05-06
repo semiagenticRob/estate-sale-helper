@@ -1,10 +1,10 @@
 name: Daily Estate Sale Scraper
 
+# Daily schedule moved to local launchd on Peter Rabbit Mac mini
+# (~/Library/LaunchAgents/com.semiagenticrob.esh-scraper.plist).
+# This workflow remains as a manual fallback.
 on:
-  schedule:
-    # Run at 7:00 AM Central (13:00 UTC) every day
-    - cron: '0 13 * * *'
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   scrape:
