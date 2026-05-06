@@ -490,7 +490,7 @@ def needs_detail_scrape(existing: Optional[dict], current_hash: str) -> bool:
 
 # ─── Runner ──────────────────────────────────────────────────────────────────
 
-def run(grid_points: list[tuple[float, float]] = ACTIVE_POINTS):
+def run(grid_points: list[tuple[float, float]] = GRID_POINTS):
     seen_ids:        set[str] = set()
     total_discovered = 0
     total_upserted   = 0
